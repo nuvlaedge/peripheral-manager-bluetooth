@@ -99,19 +99,21 @@ def deviceDiscovery():
 def currentDevInfo():
     output = str(subprocess.run(["hcitool", "dev"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout).split("\\t")[-1].replace("\\n'", "")
     return output
+
 def bluetoothManager():
 
+    output = []
 
     try:
         bluetoothDevices = deviceDiscovery()
-        output = {
-                "available": True,
-                "name": 'hostname',
-                "classes": ["computer", "audio", "video", "tv", ...],
-                "identifier": currentDevInfo(),
-                "interface": "bluetooth",
-                "search": bluetoothDevices
-        }
+        for device in bluetoothDevices:
+            output.append({
+                    "available": True,
+                    "name": device[1],
+                    "classes": ["computer", "audio", "video", "tv", ...],
+                    "identifier": device[0],
+                    "interface": "bluetooth",
+            })
 
     except:
         output = {
