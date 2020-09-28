@@ -96,10 +96,6 @@ def deviceDiscovery():
     return bluetooth.discover_devices(lookup_names=True)
 
 
-def currentDevInfo():
-    output = str(subprocess.run(["hcitool", "dev"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout).split("\\t")[-1].replace("\\n'", "")
-    return output
-
 def bluetoothManager():
 
     output = []
@@ -114,7 +110,6 @@ def bluetoothManager():
                     "identifier": device[0],
                     "interface": "bluetooth",
             })
-
     except:
         output = {
                 "available": False,
