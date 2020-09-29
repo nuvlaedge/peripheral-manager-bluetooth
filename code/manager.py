@@ -10,7 +10,7 @@ This service provides bluetooth device discovery.
 
 
 import bluetooth
-from bluetooth.ble import DiscoveryService
+from gattlib import DiscoveryService
 import logging
 import requests
 import sys
@@ -95,10 +95,21 @@ def deviceDiscovery():
 
 
 def bleDeviceDiscovery():
-    service = DiscoveryService()
-    devices = service.discover(2)
+    
+    service = DiscoveryService("hci0")
+    devices = list(service.discover(2).items())
     return devices
 
+
+def compareBluetooth(bluetooth, ble):
+    output = []
+    for device in bluetooth:
+        if device not in ble:
+            output.append(device)
+
+    output.extend(ble)
+
+    return output
 
 def bluetoothManager():
 
@@ -107,7 +118,10 @@ def bluetoothManager():
     try:
         bluetoothDevices = deviceDiscovery()
         bleDevices = bleDeviceDiscovery()
-        for device in bluetoothDevices:
+
+        bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
+        
+        for device in bluetooth:
             output.append({
                     "available": True,
                     "name": device[1],
