@@ -2,16 +2,15 @@
 
 # -*- coding: utf-8 -*-
 
-"""NuvlaBox Peripheral Manager Ethernet
+"""NuvlaBox Peripheral Manager Bluetooth
 
-This service provides ethernet devices and wireless netowork discovery.
+This service provides bluetooth device discovery.
 
 """
 
 
 import bluetooth
-import socket
-import subprocess
+from bluetooth.ble import DiscoveryService
 import logging
 import requests
 import sys
@@ -21,7 +20,6 @@ import os
 import json
 
 
-identifier = 'bluetooth'
 
 def init_logger():
     """ Initializes logging """
@@ -62,21 +60,21 @@ def send(url, assets):
 def bluetoothCheck(api_url, currentNetwork):
     """ Checks if peripheral already exists """
 
-    logging.info('Checking if Network Devices are already published')
+    logging.info('Checking if Bluetooth Device is already published')
 
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' + identifier)
+    get_ethernet = requests.get(api_url + '?identifier_pattern=' + current_network['identifier'])
     
     logging.info(get_ethernet.json())
 
     if not get_ethernet.ok or not isinstance(get_ethernet.json(), list) or len(get_ethernet.json()) == 0:
-        logging.info('No Network Device published.')
+        logging.info('Bluetooth Device hasnt been published.')
         return True
     
     elif get_ethernet.json() != currentNetwork:
         logging.info('Network has changed')
         return True
 
-    logging.info('Network Devices were already been published.')
+    logging.info('Bluetooth device has already been published.')
     return False
 
 
@@ -96,12 +94,19 @@ def deviceDiscovery():
     return bluetooth.discover_devices(lookup_names=True)
 
 
+def bleDeviceDiscovery():
+    service = DiscoveryService()
+    devices = service.discover(2)
+    return devices
+
+
 def bluetoothManager():
 
     output = []
 
     try:
         bluetoothDevices = deviceDiscovery()
+        bleDevices = bleDeviceDiscovery()
         for device in bluetoothDevices:
             output.append({
                     "available": True,
@@ -115,7 +120,6 @@ def bluetoothManager():
                 "available": False,
                 "interface": "bluetooth",
         }
-
 
     return output
     
