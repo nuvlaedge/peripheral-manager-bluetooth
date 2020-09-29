@@ -9,16 +9,14 @@ This service provides bluetooth device discovery.
 """
 
 
-import bluetooth
-from gattlib import DiscoveryService
+import bluetooth 
+from gattlib import DiscoveryService # Used for BLE discovery
 import logging
 import requests
 import sys
 import time
 from threading import Event
-import os
 import json
-
 
 
 def init_logger():
@@ -50,12 +48,26 @@ def wait_bootstrap(healthcheck_endpoint="http://agent/api/healthcheck"):
     logging.info('NuvlaBox has been initialized.')
     return
 
+def publish(url, assets):
+    """
+    API publishing function.
+    """
+
+    x = requests.post(url, json=assets)
+    return x.json()
+
+
 def send(url, assets):
     """ Sends POST request for registering new peripheral """
 
-    logging.info("Sending GPU information to Nuvla")
+    logging.info("Sending Bluetooth Device information to Nuvla")
     return publish(url, assets)
 
+
+def remove(url, assets):
+    logging.info("Removing Bluetooth Device from Nuvla")
+    x = requests.delete(url, json=assets)
+    return x.json()
 
 def bluetoothCheck(api_url, currentNetwork):
     """ Checks if peripheral already exists """
@@ -78,15 +90,6 @@ def bluetoothCheck(api_url, currentNetwork):
     return False
 
 
-def publish(url, assets):
-    """
-    API publishing function.
-    """
-
-    x = requests.post(url, json=assets)
-    return x.json()
-
-
 def deviceDiscovery():
     """
     Return all discoverable bluetooth devices.
@@ -105,9 +108,10 @@ def compareBluetooth(bluetooth, ble):
     output = []
     for device in bluetooth:
         if device not in ble:
-            output.append(device)
+            output.append((device, 'bluetooth'))
 
-    output.extend(ble)
+    for device in ble:
+        output.append((device, 'bluetooth-le'))
 
     return output
 
@@ -120,19 +124,18 @@ def bluetoothManager():
         bleDevices = bleDeviceDiscovery()
 
         bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
-        
+
         for device in bluetooth:
             output.append({
                     "available": True,
-                    "name": device[1],
+                    "name": device[0][1],
                     "classes": ["computer", "audio", "video", "tv", ...],
-                    "identifier": device[0],
-                    "interface": "bluetooth",
+                    "identifier": device[0][0],
+                    "interface": device[1],
             })
     except:
         output = {
                 "available": False,
-                "interface": "bluetooth",
         }
 
     return output
@@ -150,16 +153,24 @@ if __name__ == "__main__":
 
     e = Event()
 
+    network = []
+
     while True:
 
         current_network = bluetoothManager()
 
-        if current_network:
+        if current_network and current_network != network:
             for i in current_network:
+
                 peripheral_already_registered = bluetoothCheck(API_URL, i)
 
-                if peripheral_already_registered:
+                if peripheral_already_registered and i not in network:
                     send(API_URL, i)
+                
+                elif not peripheral_already_registered and i in network:
+                    remove(API_URL, i)
+            
+            netowrk = current_network
 
         e.wait(timeout=90)
 
