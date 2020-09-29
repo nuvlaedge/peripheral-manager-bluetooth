@@ -74,7 +74,7 @@ def bluetoothCheck(api_url, currentNetwork):
 
     logging.info('Checking if Bluetooth Device is already published')
 
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' + current_network['identifier'])
+    get_ethernet = requests.get(api_url + '?identifier_pattern=' + currentNetwork['identifier'])
     
     logging.info(get_ethernet.json())
 
@@ -106,6 +106,7 @@ def bleDeviceDiscovery():
 
 def compareBluetooth(bluetooth, ble):
     output = []
+
     for device in bluetooth:
         if device not in ble:
             output.append((device, 'bluetooth'))
@@ -129,14 +130,12 @@ def bluetoothManager():
             output.append({
                     "available": True,
                     "name": device[0][1],
-                    "classes": ["computer", "audio", "video", "tv", ...],
+                    "classes": ["bluetooth"],
                     "identifier": device[0][0],
                     "interface": device[1],
-            })
+                })
     except:
-        output = {
-                "available": False,
-        }
+        pass
 
     return output
     
@@ -159,16 +158,19 @@ if __name__ == "__main__":
 
         current_network = bluetoothManager()
 
-        if current_network and current_network != network:
-            for i in current_network:
+        if current_network and current_network != network and current_network != []:
 
-                peripheral_already_registered = bluetoothCheck(API_URL, i)
+            for device in current_network:
 
-                if peripheral_already_registered and i not in network:
-                    send(API_URL, i)
+                device_json = json.dumps(device)
                 
-                elif not peripheral_already_registered and i in network:
-                    remove(API_URL, i)
+                peripheral_already_registered = bluetoothCheck(API_URL, device_json)
+
+                if peripheral_already_registered and device not in network:
+                    send(API_URL, device_json)
+                
+                elif not peripheral_already_registered and device in network:
+                    remove(API_URL, device_json)
             
             netowrk = current_network
 
