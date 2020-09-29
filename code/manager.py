@@ -137,10 +137,11 @@ if __name__ == "__main__":
         current_network = bluetoothManager()
 
         if current_network:
-            peripheral_already_registered = bluetoothCheck(API_URL, current_network)
+            for i in current_network:
+                peripheral_already_registered = bluetoothCheck(API_URL, i)
 
-            if peripheral_already_registered:
-                send(API_URL, current_network)
+                if peripheral_already_registered:
+                    send(API_URL, i)
 
         e.wait(timeout=90)
 
