@@ -6,8 +6,6 @@ RUN apt update && apt install g++ make libbluetooth-dev libboost-all-dev libglib
 
 COPY code/ /opt/nuvlabox/
 
-COPY testAsync2.py /opt/nuvlabox/
-
 WORKDIR /opt/nuvlabox/
 
 # ENTRYPOINT ["python", "manager.py"]

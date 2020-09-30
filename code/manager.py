@@ -9,8 +9,6 @@ This service provides bluetooth device discovery.
 """
 
 from bluepy.btle import Scanner, DefaultDelegate
-# import bluetooth 
-# from gattlib import DiscoveryService # Used for BLE discovery
 import logging
 import requests
 import sys
@@ -70,27 +68,6 @@ def remove(url, assets):
     x = requests.delete(url, json=assets)
     return x.json()
 
-def bluetoothCheck(api_url, currentNetwork):
-    """ Checks if peripheral already exists """
-
-    logging.info('Checking if Bluetooth Device is already published')
-
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' + currentNetwork['identifier'])
-    
-    logging.info(get_ethernet.json())
-
-    if not get_ethernet.ok or not isinstance(get_ethernet.json(), list) or len(get_ethernet.json()) == 0:
-        logging.info('Bluetooth Device hasnt been published.')
-        return True
-    
-    elif get_ethernet.json() != currentNetwork:
-        logging.info('Network has changed')
-        return True
-
-    logging.info('Bluetooth device has already been published.')
-    return False
-
-
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
@@ -117,8 +94,6 @@ class ScanDelegate(DefaultDelegate):
 
 if __name__ == "__main__":
 
-    print('BLUETOOTH MANAGER STARTED')
-
     init_logger()
 
     API_BASE_URL = "http://agent/api"
@@ -131,8 +106,8 @@ if __name__ == "__main__":
 
     scanner = Scanner().withDelegate(ScanDelegate())
 
-    # start the scanner and keep the process running
     scanner.start()
+
     while True:
         scanner.process()
 
