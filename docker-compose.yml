@@ -1,10 +1,11 @@
 version: "3.6"
 
 services:
-  peripheral-manager-ethernet:
-    build: .
+  peripheral-manager-bluetooth:
+    image: peripheral-manager-bluetooth
     restart: on-failure
     network_mode: host
+    privileged: True
     volumes:
       - /var/run/dbus:/var/run/dbus
     labels:

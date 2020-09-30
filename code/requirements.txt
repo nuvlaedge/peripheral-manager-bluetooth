@@ -1,2 +1,4 @@
-pybluez
-gattlib
+# pybluez
+# gattlib
+requests
+bluepy

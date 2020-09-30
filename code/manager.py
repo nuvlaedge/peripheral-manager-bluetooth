@@ -8,15 +8,16 @@ This service provides bluetooth device discovery.
 
 """
 
-
-import bluetooth 
-from gattlib import DiscoveryService # Used for BLE discovery
+from bluepy.btle import Scanner, DefaultDelegate
+# import bluetooth 
+# from gattlib import DiscoveryService # Used for BLE discovery
 import logging
 import requests
 import sys
 import time
 from threading import Event
 import json
+import converter
 
 
 def init_logger():
@@ -90,57 +91,33 @@ def bluetoothCheck(api_url, currentNetwork):
     return False
 
 
-def deviceDiscovery():
-    """
-    Return all discoverable bluetooth devices.
-    """
-    return bluetooth.discover_devices(lookup_names=True)
+class ScanDelegate(DefaultDelegate):
+    def __init__(self):
+        DefaultDelegate.__init__(self)
 
-
-def bleDeviceDiscovery():
-    
-    service = DiscoveryService("hci0")
-    devices = list(service.discover(2).items())
-    return devices
-
-
-def compareBluetooth(bluetooth, ble):
-    output = []
-
-    for device in bluetooth:
-        if device not in ble:
-            output.append((device, 'bluetooth'))
-
-    for device in ble:
-        output.append((device, 'bluetooth-le'))
-
-    return output
-
-def bluetoothManager():
-
-    output = []
-
-    try:
-        bluetoothDevices = deviceDiscovery()
-        bleDevices = bleDeviceDiscovery()
-
-        bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
-
-        for device in bluetooth:
-            output.append({
-                    "available": True,
-                    "name": device[0][1],
-                    "classes": ["bluetooth"],
-                    "identifier": device[0][0],
-                    "interface": device[1],
-                })
-    except:
-        pass
-
-    return output
-    
+    def handleDiscovery(self, dev, isNewDev, isNewData):
+        d = {
+            "available": True,
+            "name": "",
+            "classes": [],
+            "identifier": "bluetooth-le",
+            "interface": ""
+        }
+        if isNewDev:
+            d['interface'] = dev.addr
+            d['available'] = dev.connectable
+            data = dev.getScanData()
+            for i in data:
+                if i[0] == 9:
+                    d['name'] = i[-1]
+                elif i[0] == 13:
+                    d['classes'] = converter.convert(i[-1])
+                
+            send(API_URL, d)
 
 if __name__ == "__main__":
+
+    print('BLUETOOTH MANAGER STARTED')
 
     init_logger()
 
@@ -152,28 +129,12 @@ if __name__ == "__main__":
 
     e = Event()
 
-    network = []
+    scanner = Scanner().withDelegate(ScanDelegate())
 
+    # start the scanner and keep the process running
+    scanner.start()
     while True:
+        scanner.process()
 
-        current_network = bluetoothManager()
-
-        if current_network and current_network != network and current_network != []:
-
-            for device in current_network:
-
-                device_json = json.dumps(device)
-                
-                peripheral_already_registered = bluetoothCheck(API_URL, device_json)
-
-                if peripheral_already_registered and device not in network:
-                    send(API_URL, device_json)
-                
-                elif not peripheral_already_registered and device in network:
-                    remove(API_URL, device_json)
-            
-            netowrk = current_network
-
-        e.wait(timeout=90)
 
 
