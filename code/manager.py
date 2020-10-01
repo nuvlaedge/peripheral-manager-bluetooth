@@ -90,7 +90,11 @@ class ScanDelegate(DefaultDelegate):
                 elif i[0] == 13:
                     d['classes'] = converter.convert(i[-1])
                 
-            send(API_URL, d)
+            # send(API_URL, d)
+        
+        else:
+            pass
+
 
 if __name__ == "__main__":
 
@@ -110,6 +114,8 @@ if __name__ == "__main__":
 
     while True:
         scanner.process()
+        current_network = scanner.getDevices()
 
+        print(current_network)
 
 
