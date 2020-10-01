@@ -91,7 +91,7 @@ class ScanDelegate(DefaultDelegate):
                     d['classes'] = converter.convert(i[-1])
                 
             # send(API_URL, d)
-        
+            print(d)
         else:
             pass
 
@@ -102,11 +102,11 @@ if __name__ == "__main__":
 
     API_BASE_URL = "http://agent/api"
 
-    wait_bootstrap()
+    # wait_bootstrap()
 
     API_URL = API_BASE_URL + "/peripheral"
-
-    e = Event()
+# 
+    # e = Event()
 
     scanner = Scanner().withDelegate(ScanDelegate())
 
