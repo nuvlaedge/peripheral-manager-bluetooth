@@ -7,8 +7,8 @@ This service provides bluetooth device discovery.
 """
 
 
-import bluetooth 
-from gattlib import DiscoveryService # Used for BLE discovery
+import bluetooth
+from gattlib import DiscoveryService  # Used for BLE discovery
 import logging
 import requests
 import sys
@@ -31,20 +31,23 @@ def init_logger():
 
 
 def wait_bootstrap(healthcheck_endpoint="http://agent/api/healthcheck"):
-    """ Simply waits for the NuvlaBox to finish bootstrapping, by pinging the Agent API
+    """
+    Simply waits for the NuvlaBox to finish bootstrapping, by pinging
+        the Agent API
     :returns
     """
 
     logging.info("Checking if NuvlaBox has been initialized...")
 
     r = requests.get(healthcheck_endpoint)
-    
+
     while not r.ok:
         time.sleep(5)
         r = requests.get(healthcheck_endpoint)
 
     logging.info('NuvlaBox has been initialized.')
     return
+
 
 def publish(url, assets):
     """
@@ -67,19 +70,24 @@ def remove(url, assets):
     x = requests.delete(url, json=assets)
     return x.json()
 
+
 def bluetoothCheck(api_url, currentNetwork):
     """ Checks if peripheral already exists """
 
     logging.info('Checking if Bluetooth Device is already published')
 
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' + currentNetwork['identifier'])
-    
+    get_ethernet = requests.get(api_url + '?identifier_pattern=' +
+                                currentNetwork['identifier'])
+
     logging.info(get_ethernet.json())
 
-    if not get_ethernet.ok or not isinstance(get_ethernet.json(), list) or len(get_ethernet.json()) == 0:
+    if not get_ethernet.ok or \
+        not isinstance(get_ethernet.json(), list) \
+            or len(get_ethernet.json()) == 0:
+
         logging.info('Bluetooth Device hasnt been published.')
         return True
-    
+
     elif get_ethernet.json() != currentNetwork:
         logging.info('Network has changed')
         return True
@@ -96,7 +104,6 @@ def deviceDiscovery():
 
 
 def bleDeviceDiscovery():
-    
     service = DiscoveryService("hci0")
     devices = list(service.discover(2).items())
     return devices
@@ -114,6 +121,7 @@ def compareBluetooth(bluetooth, ble):
 
     return output
 
+
 def bluetoothManager():
 
     output = {}
@@ -127,7 +135,7 @@ def bluetoothManager():
         bleDevices = bleDeviceDiscovery()
     except:
         bleDevices = []
-    
+
     bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
     if len(bluetooth) > 0:
         for device in bluetooth:
@@ -140,7 +148,7 @@ def bluetoothManager():
                 }
 
     return output
-    
+
 
 if __name__ == "__main__":
 
@@ -171,7 +179,8 @@ if __name__ == "__main__":
             for device in publishing:
 
                 print('PUBLISHING: {}'.format(current_network[device]))
-                peripheral_already_registered = bluetoothCheck(API_URL, current_network[device])
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, current_network[device])
 
                 if peripheral_already_registered:
                     send(API_URL, current_network[device])
@@ -180,8 +189,9 @@ if __name__ == "__main__":
             for device in removing:
 
                 print('REMOVING: {}'.format(network[device]))
-                peripheral_already_registered = bluetoothCheck(API_URL, network[device])
-                
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, network[device])
+
                 if not peripheral_already_registered:
                     remove(API_URL, network[device])
                     del network[device]
