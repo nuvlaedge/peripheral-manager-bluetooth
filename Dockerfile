@@ -10,4 +10,5 @@ WORKDIR /opt/nuvlabox/
 
 ONBUILD RUN ./license.sh
 
-ENTRYPOINT ["python", "manager.py"]
+# ENTRYPOINT ["python", "manager.py"]
+docker run -v --cap-add=SYS_ADMIN -v /opt/bluetooth:/var/lib/bluetooth -v /sys/fs/cgroup:/sys/fs/cgroup:ro --net=host -it python:3.6-slim bash
