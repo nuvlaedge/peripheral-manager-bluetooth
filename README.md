@@ -1,8 +1,5 @@
 # peripheral-manager-bluetooth
 
-Discovers, categorizes and manages all NuvlaBox Bluetooth peripherals.
-
-
 
 **This repository contains the source code for the NuvlaBox Peripheral Manager for Bluetooth devices - this microservice is responsible for the discovery, categorization and management of all [NuvlaBox](https://sixsq.com/products-and-services/nuvlabox/overview) Bluetooth peripherals.**
 
