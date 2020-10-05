@@ -156,11 +156,11 @@ if __name__ == "__main__":
 
     API_BASE_URL = "http://agent/api"
 
-    wait_bootstrap()
+    # wait_bootstrap()
 
     API_URL = API_BASE_URL + "/peripheral"
 
-    e = Event()
+    # e = Event()
 
     devices = {}
 
@@ -178,22 +178,22 @@ if __name__ == "__main__":
 
             for device in publishing:
 
-                peripheral_already_registered = \
-                    bluetoothCheck(API_URL, current_devices[device])
+                # peripheral_already_registered = \
+                    # bluetoothCheck(API_URL, current_devices[device])
 
-                if not peripheral_already_registered:
-                    print('PUBLISHING: {}'.format(current_devices[device]))
-                    send(API_URL, current_devices[device])
-                    devices[device] = current_devices[device]
+                # if not peripheral_already_registered:
+                print('PUBLISHING: {}'.format(current_devices[device]))
+                    # send(API_URL, current_devices[device])
+                    # devices[device] = current_devices[device]
 
             for device in removing:
 
-                peripheral_already_registered = \
-                    bluetoothCheck(API_URL, devices[device])
+                # peripheral_already_registered = \
+                    # bluetoothCheck(API_URL, devices[device])
 
-                if peripheral_already_registered:
-                    print('REMOVING: {}'.format(devices[device]))
-                    remove(API_URL, devices[device])
-                    del devices[device]
+                # if peripheral_already_registered:
+                print('REMOVING: {}'.format(devices[device]))
+                    # remove(API_URL, devices[device])
+                    # del devices[device]
 
-        e.wait(timeout=90)
+        # e.wait(timeout=90)
