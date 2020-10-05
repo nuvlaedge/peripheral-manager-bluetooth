@@ -1,4 +1,4 @@
-FROM python:3.7-slim-buster
+FROM python:3.7-slim
 
 COPY code/requirements.txt /opt/nuvlabox/
 
@@ -10,4 +10,4 @@ WORKDIR /opt/nuvlabox/
 
 ONBUILD RUN ./license.sh
 
-# ENTRYPOINT ["python", "manager.py"]
+ENTRYPOINT ["python", "manager.py"]

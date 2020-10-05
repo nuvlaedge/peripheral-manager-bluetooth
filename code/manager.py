@@ -71,26 +71,26 @@ def remove(url, assets):
     return x.json()
 
 
-def bluetoothCheck(api_url, currentNetwork):
+def bluetoothCheck(api_url, currentDevices):
     """ Checks if peripheral already exists """
 
     logging.info('Checking if Bluetooth Device is already published')
 
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' +
-                                currentNetwork['identifier'])
+    get_bluetooth = requests.get(api_url + '?identifier_pattern=' +
+                                currentDevices['identifier'])
 
-    logging.info(get_ethernet.json())
+    logging.info(get_bluetooth.json())
 
-    if not get_ethernet.ok or \
-        not isinstance(get_ethernet.json(), list) \
-            or len(get_ethernet.json()) == 0:
+    if not get_bluetooth.ok or \
+        not isinstance(get_bluetooth.json(), list) \
+            or len(get_bluetooth.json()) == 0:
 
         logging.info('Bluetooth Device hasnt been published.')
-        return True
+        return False
 
-    elif get_ethernet.json() != currentNetwork:
+    elif get_bluetooth.json() != currentDevices:
         logging.info('Network has changed')
-        return True
+        return False
 
     logging.info('Bluetooth device has already been published.')
     return False
@@ -162,38 +162,38 @@ if __name__ == "__main__":
 
     e = Event()
 
-    network = {}
+    devices = {}
 
     while True:
 
-        current_network = bluetoothManager()
+        current_devices = bluetoothManager()
 
-        if current_network != network and current_network != []:
+        if current_devices != devices and current_devices:
 
-            network_set = set(network.keys())
-            current_network_set = set(current_network.keys())
+            devices_set = set(devices.keys())
+            current_devices_set = set(current_devices.keys())
 
-            publishing = current_network_set - network_set
-            removing = network_set - current_network_set
+            publishing = current_devices_set - devices_set
+            removing = devices_set - current_devices_set
 
             for device in publishing:
 
-                print('PUBLISHING: {}'.format(current_network[device]))
                 peripheral_already_registered = \
-                    bluetoothCheck(API_URL, current_network[device])
+                    bluetoothCheck(API_URL, current_devices[device])
 
-                if peripheral_already_registered:
-                    send(API_URL, current_network[device])
-                    network[device] = current_network[device]
+                if not peripheral_already_registered:
+                    print('PUBLISHING: {}'.format(current_devices[device]))
+                    send(API_URL, current_devices[device])
+                    devices[device] = current_devices[device]
 
             for device in removing:
 
-                print('REMOVING: {}'.format(network[device]))
                 peripheral_already_registered = \
-                    bluetoothCheck(API_URL, network[device])
+                    bluetoothCheck(API_URL, devices[device])
 
-                if not peripheral_already_registered:
-                    remove(API_URL, network[device])
-                    del network[device]
+                if peripheral_already_registered:
+                    print('REMOVING: {}'.format(devices[device]))
+                    remove(API_URL, devices[device])
+                    del devices[device]
 
         e.wait(timeout=90)
