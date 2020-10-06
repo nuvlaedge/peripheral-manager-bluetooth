@@ -177,9 +177,7 @@ if __name__ == "__main__":
             current_devices_set = set(current_devices.keys())
 
             publishing = current_devices_set - devices_set
-            print(publishing)
             removing = devices_set - current_devices_set
-            print(removing)
 
             for device in publishing:
 
