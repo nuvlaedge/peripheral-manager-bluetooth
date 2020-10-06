@@ -6,7 +6,6 @@
 This service provides bluetooth device discovery.
 """
 
-
 import bluetooth
 from gattlib import DiscoveryService  # Used for BLE discovery
 import logging
@@ -169,7 +168,7 @@ if __name__ == "__main__":
     while True:
 
         current_devices = bluetoothManager()
-        print('CURRENT DEVICES: {}\n'.format(current_devices))
+        print('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
         
         if current_devices != devices and current_devices:
 
@@ -185,7 +184,7 @@ if __name__ == "__main__":
                     # bluetoothCheck(API_URL, current_devices[device])
 
                 # if not peripheral_already_registered:
-                print('PUBLISHING: {}'.format(current_devices[device]))
+                print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
                     # send(API_URL, current_devices[device])
                 devices[device] = current_devices[device]
 
@@ -195,7 +194,7 @@ if __name__ == "__main__":
                     # bluetoothCheck(API_URL, devices[device])
 
                 # if peripheral_already_registered:
-                print('REMOVING: {}'.format(devices[device]))
+                print('REMOVING: {}'.format(devices[device]), flush=True)
                     # remove(API_URL, devices[device])
                 del devices[device]
 
