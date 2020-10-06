@@ -4,7 +4,7 @@ services:
   peripheral-manager-bluetooth:
     image: peripheral-manager-bluetooth
     restart: on-failure
-    network_mode: host
+    network_mode: "host"
     volumes:
       - /opt/bluetooth:/var/lib/bluetooth
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
