@@ -117,7 +117,7 @@ def compareBluetooth(bluetooth, ble):
             output.append((device, 'bluetooth'))
 
     for device in ble:
-w        output.append((device, 'bluetooth-le'))
+        output.append((device, 'bluetooth-le'))
 
     return output
 
