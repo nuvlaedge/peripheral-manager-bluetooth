@@ -10,4 +10,4 @@ WORKDIR /opt/nuvlabox/
 
 ONBUILD RUN ./license.sh
 
-ENTRYPOINT ["python", "manager.py"]
+ENTRYPOINT ["python", "-u","manager.py"]
