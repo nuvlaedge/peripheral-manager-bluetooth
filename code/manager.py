@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     devices = {}
 
-  #  while True:
+   while True:
 
         current_devices = bluetoothManager()
         print('CURRENT DEVICES: {}'.format(current_devices))
