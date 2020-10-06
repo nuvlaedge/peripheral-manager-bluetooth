@@ -158,13 +158,6 @@ if __name__ == "__main__":
 
     API_BASE_URL = "http://agent/api"
 
-<<<<<<< HEAD
-    #wait_bootstrap()
-
-    API_URL = API_BASE_URL + "/peripheral"
-
-   # e = Event()
-=======
     # wait_bootstrap()
 
     API_URL = API_BASE_URL + "/peripheral"
@@ -172,21 +165,9 @@ if __name__ == "__main__":
     # e = Event()
 
     devices = {}
->>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
 
   #  while True:
 
-<<<<<<< HEAD
- #       current_network = bluetoothManager()
-
-#        if current_network:
-#            for i in current_network:
-#                peripheral_already_registered = bluetoothCheck(API_URL, i)
-
-#                if peripheral_already_registered:
-#                    send(API_URL, i)
-        #e.wait(timeout=90)
-=======
         current_devices = bluetoothManager()
         print('CURRENT DEVICES: {}'.format(current_devices))
         
@@ -212,15 +193,10 @@ if __name__ == "__main__":
 
                 # peripheral_already_registered = \
                     # bluetoothCheck(API_URL, devices[device])
->>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
 
                 # if peripheral_already_registered:
                 print('REMOVING: {}'.format(devices[device]))
                     # remove(API_URL, devices[device])
                     # del devices[device]
 
-<<<<<<< HEAD
-    print(bluetoothManager())
-=======
         # e.wait(timeout=90)
->>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
