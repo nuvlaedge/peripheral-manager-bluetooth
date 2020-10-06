@@ -189,7 +189,7 @@ if __name__ == "__main__":
                 # if not peripheral_already_registered:
                 print('PUBLISHING: {}'.format(current_devices[device]))
                     # send(API_URL, current_devices[device])
-                    # devices[device] = current_devices[device]
+                devices[device] = current_devices[device]
 
             for device in removing:
 
@@ -199,6 +199,6 @@ if __name__ == "__main__":
                 # if peripheral_already_registered:
                 print('REMOVING: {}'.format(devices[device]))
                     # remove(API_URL, devices[device])
-                    # del devices[device]
+                del devices[device]
 
         # e.wait(timeout=90)
