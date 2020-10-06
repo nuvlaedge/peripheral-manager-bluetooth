@@ -3,22 +3,18 @@
 # -*- coding: utf-8 -*-
 
 """NuvlaBox Peripheral Manager Bluetooth
-
 This service provides bluetooth device discovery.
-
 """
 
 
 import bluetooth
-from gattlib import DiscoveryService
+from gattlib import DiscoveryService  # Used for BLE discovery
 import logging
 import requests
 import sys
 import time
 from threading import Event
-import os
 import json
-
 
 
 def init_logger():
@@ -35,47 +31,22 @@ def init_logger():
 
 
 def wait_bootstrap(healthcheck_endpoint="http://agent/api/healthcheck"):
-    """ Simply waits for the NuvlaBox to finish bootstrapping, by pinging the Agent API
+    """
+    Simply waits for the NuvlaBox to finish bootstrapping, by pinging
+        the Agent API
     :returns
     """
 
     logging.info("Checking if NuvlaBox has been initialized...")
 
     r = requests.get(healthcheck_endpoint)
-    
+
     while not r.ok:
         time.sleep(5)
         r = requests.get(healthcheck_endpoint)
 
     logging.info('NuvlaBox has been initialized.')
     return
-
-def send(url, assets):
-    """ Sends POST request for registering new peripheral """
-
-    logging.info("Sending GPU information to Nuvla")
-    return publish(url, assets)
-
-
-def bluetoothCheck(api_url, currentNetwork):
-    """ Checks if peripheral already exists """
-
-    logging.info('Checking if Bluetooth Device is already published')
-
-    get_ethernet = requests.get(api_url + '?identifier_pattern=' + current_network['identifier'])
-    
-    logging.info(get_ethernet.json())
-
-    if not get_ethernet.ok or not isinstance(get_ethernet.json(), list) or len(get_ethernet.json()) == 0:
-        logging.info('Bluetooth Device hasnt been published.')
-        return True
-    
-    elif get_ethernet.json() != currentNetwork:
-        logging.info('Network has changed')
-        return True
-
-    logging.info('Bluetooth device has already been published.')
-    return False
 
 
 def publish(url, assets):
@@ -87,6 +58,44 @@ def publish(url, assets):
     return x.json()
 
 
+def send(url, assets):
+    """ Sends POST request for registering new peripheral """
+
+    logging.info("Sending Bluetooth Device information to Nuvla")
+    return publish(url, assets)
+
+
+def remove(url, assets):
+    logging.info("Removing Bluetooth Device from Nuvla")
+    x = requests.delete(url, json=assets)
+    return x.json()
+
+
+def bluetoothCheck(api_url, currentDevices):
+    """ Checks if peripheral already exists """
+
+    logging.info('Checking if Bluetooth Device is already published')
+
+    get_bluetooth = requests.get(api_url + '?identifier_pattern=' +
+                                currentDevices['identifier'])
+
+    logging.info(get_bluetooth.json())
+
+    if not get_bluetooth.ok or \
+        not isinstance(get_bluetooth.json(), list) \
+            or len(get_bluetooth.json()) == 0:
+
+        logging.info('Bluetooth Device hasnt been published.')
+        return False
+
+    elif get_bluetooth.json() != currentDevices:
+        logging.info('Network has changed')
+        return False
+
+    logging.info('Bluetooth device has already been published.')
+    return False
+
+
 def deviceDiscovery():
     """
     Return all discoverable bluetooth devices.
@@ -95,7 +104,6 @@ def deviceDiscovery():
 
 
 def bleDeviceDiscovery():
-    
     service = DiscoveryService("hci0")
     devices = list(service.discover(2).items())
     return devices
@@ -103,40 +111,44 @@ def bleDeviceDiscovery():
 
 def compareBluetooth(bluetooth, ble):
     output = []
+
     for device in bluetooth:
         if device not in ble:
-            output.append(device)
+            output.append((device, 'bluetooth'))
 
-    output.extend(ble)
+    for device in ble:
+        output.append((device, 'bluetooth-le'))
 
     return output
+
 
 def bluetoothManager():
 
-    output = []
+    output = {}
 
     try:
         bluetoothDevices = deviceDiscovery()
-        bleDevices = bleDeviceDiscovery()
-
-        bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
-        
-        for device in bluetooth:
-            output.append({
-                    "available": True,
-                    "name": device[1],
-                    "classes": ["computer", "audio", "video", "tv", ...],
-                    "identifier": device[0],
-                    "interface": "bluetooth",
-            })
     except:
-        output = {
-                "available": False,
-                "interface": "bluetooth",
-        }
+        bluetoothDevices = []
+
+    try:
+        bleDevices = bleDeviceDiscovery()
+    except:
+        bleDevices = []
+
+    bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
+    if len(bluetooth) > 0:
+        for device in bluetooth:
+            output[device[0][0]] = {
+                    "available": True,
+                    "name": device[0][1],
+                    "classes": [],
+                    "identifier": device[0][0],
+                    "interface": device[-1],
+                }
 
     return output
-    
+
 
 if __name__ == "__main__":
 
@@ -144,14 +156,25 @@ if __name__ == "__main__":
 
     API_BASE_URL = "http://agent/api"
 
+<<<<<<< HEAD
     #wait_bootstrap()
 
     API_URL = API_BASE_URL + "/peripheral"
 
    # e = Event()
+=======
+    # wait_bootstrap()
+
+    API_URL = API_BASE_URL + "/peripheral"
+
+    # e = Event()
+
+    devices = {}
+>>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
 
   #  while True:
 
+<<<<<<< HEAD
  #       current_network = bluetoothManager()
 
 #        if current_network:
@@ -161,6 +184,41 @@ if __name__ == "__main__":
 #                if peripheral_already_registered:
 #                    send(API_URL, i)
         #e.wait(timeout=90)
+=======
+        current_devices = bluetoothManager()
+        print('CURRENT DEVICES: {}'.format(current_devices))
+        
+        if current_devices != devices and current_devices:
 
+            devices_set = set(devices.keys())
+            current_devices_set = set(current_devices.keys())
 
+            publishing = current_devices_set - devices_set
+            removing = devices_set - current_devices_set
+
+            for device in publishing:
+
+                # peripheral_already_registered = \
+                    # bluetoothCheck(API_URL, current_devices[device])
+
+                # if not peripheral_already_registered:
+                print('PUBLISHING: {}'.format(current_devices[device]))
+                    # send(API_URL, current_devices[device])
+                    # devices[device] = current_devices[device]
+
+            for device in removing:
+
+                # peripheral_already_registered = \
+                    # bluetoothCheck(API_URL, devices[device])
+>>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
+
+                # if peripheral_already_registered:
+                print('REMOVING: {}'.format(devices[device]))
+                    # remove(API_URL, devices[device])
+                    # del devices[device]
+
+<<<<<<< HEAD
     print(bluetoothManager())
+=======
+        # e.wait(timeout=90)
+>>>>>>> 333e1985393935167c77ad301d7e6b5bffff6795
