@@ -169,7 +169,7 @@ if __name__ == "__main__":
     while True:
 
         current_devices = bluetoothManager()
-        print('CURRENT DEVICES: {}'.format(current_devices))
+        print('CURRENT DEVICES: {}\n'.format(current_devices))
         
         if current_devices != devices and current_devices:
 
@@ -177,7 +177,9 @@ if __name__ == "__main__":
             current_devices_set = set(current_devices.keys())
 
             publishing = current_devices_set - devices_set
+            print(publishing)
             removing = devices_set - current_devices_set
+            print(removing)
 
             for device in publishing:
 
