@@ -8,15 +8,14 @@ def convert(number):
 
     hex_string = m.group(2)
 
-    # "class" is a reserved word in Python, so CoD is class
     CoD = int(hex_string, 16)
 
-    # Class of Device: 0x38010c (Computer - services: Audio, Object transfer, Capturing)
-
     # Major Device Classes
-    classes = ['Miscellaneous', 'Computer', 'Phone', 'LAN/Network Access Point',
-                'Audio/Video', 'Peripheral', 'Imaging', 'Wearable', 'Toy',
-                'Health']
+    classes = ['Miscellaneous', 'Computer', 'Phone',
+               'LAN/Network Access Point', 'Audio/Video',
+               'Peripheral', 'Imaging', 'Wearable', 'Toy',
+               'Health']
+
     major_number = (CoD >> 8) & 0x1f
     if major_number < len(classes):
         major = classes[major_number]
@@ -77,7 +76,7 @@ def convert(number):
         else:
             minor = 'reserved'
 
-    # peripheral, this one's gross
+    # peripheral
     elif major_number == 5:
         feel_number = minor_number >> 4
         classes = [
@@ -89,12 +88,12 @@ def convert(number):
             'Uncategorized', 'Joystick', 'Gamepad', 'Remote control',
             'Sensing device', 'Digitizer tablet', 'Card Reader', 'Digital Pen',
             'Handheld scanner for bar-codes, RFID, etc.',
-            'Handheld gestural input device' ]
+            'Handheld gestural input device']
         if minor_number < len(classes):
             minor_low = classes[minor_number]
         else:
             minor_low = 'reserved'
-        
+
         minor = '%s, %s' % (feel, minor_low)
 
     # imaging
@@ -122,7 +121,7 @@ def convert(number):
     # toy
     elif major_number == 8:
         classes = ['Robot', 'Vehicle', 'Doll / Action figure', 'Controller',
-                    'Game']
+                   'Game']
         if minor_number < len(classes):
             minor = classes[minor_number]
         else:
@@ -142,7 +141,6 @@ def convert(number):
         else:
             minor = 'reserved'
 
-    # Major Service Class (can by multiple)
     services = []
     if CoD & (1 << 23):
         services.append('Information')
@@ -171,8 +169,8 @@ def convert(number):
     if minor is not None:
         output.append(' (%s)' % minor)
 
-
     return output
+
 
 if __name__ == "__main__":
     print(convert("0c012a"))
