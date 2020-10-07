@@ -5,8 +5,6 @@
 """NuvlaBox Peripheral Manager Bluetooth
 This service provides bluetooth device discovery.
 """
-
-
 import bluetooth 
 from gattlib import DiscoveryService # Used for BLE discovery
 import logging
@@ -15,6 +13,11 @@ import sys
 import time
 from threading import Event
 import json
+import docker
+from packaging import version
+import nuvla
+
+image = 'bluetooth_information:{}'
 
 
 def init_logger():
@@ -86,7 +89,44 @@ def bluetoothCheck(api_url, currentNetwork):
 
     logging.info('Bluetooth device has already been published.')
     return False
+    
 
+def getCurrentImageVersion(client):
+
+    peripheralVersion = ''
+    bluetoothVersion = ''
+    
+    for container in client.containers.list():
+        img, tag = container.image.attrs['RepoTags'][0].split(':')
+        if img == 'nuvlabox/peripheral-manager-bluetooth':
+            peripheralVersion = tag
+        elif img == image:
+            bluetoothVersion = tag
+
+    if version.parse(peripheralVersion) > version.parse(bluetoothVersion):
+        return peripheralVersion
+
+    else:
+        return '0.0.1'
+
+
+def launchSideContainer():
+    client = docker.from_env()
+    volumes = {}
+
+    currentVersion = getCurrentImageVersion(client)
+    img = image.format(currentVersion)
+
+    dbus = '/var/run/dbus'
+    volumes[dbus] = {'bind': dbus, 'mode': 'ro'}
+
+    if len(client.images.list(img)) == 0 and currentVersion != '':
+        logging.info('Build CUDA Cores Image')
+        client.images.build(path='.', tag=img, dockerfile='Dockerfile.bluetooth')
+
+    output = client.containers.run(img, network_mode="host", volumes=volumes)
+    print('OUTPUT: {}'.format(output))
+    return output
 
 def deviceDiscovery():
     """
@@ -138,9 +178,9 @@ def bluetoothManager():
                     "identifier": device[0][0],
                     "interface": device[-1],
                 }
-
+    print(output)
     return output
-    
+
 
 if __name__ == "__main__":
 
@@ -148,18 +188,19 @@ if __name__ == "__main__":
 
     API_BASE_URL = "http://agent/api"
 
-    wait_bootstrap()
+    # wait_bootstrap()
 
     API_URL = API_BASE_URL + "/peripheral"
 
-    e = Event()
+    # e = Event()
 
     network = {}
 
     while True:
-
-        current_network = bluetoothManager()
-
+        
+        print('Starting Search')
+        current_network = launchSideContainer()
+        print('Search Done')
         if current_network != network and current_network != []:
 
             network_set = set(network.keys())
@@ -171,19 +212,19 @@ if __name__ == "__main__":
             for device in publishing:
 
                 print('PUBLISHING: {}'.format(current_network[device]))
-                peripheral_already_registered = bluetoothCheck(API_URL, current_network[device])
+                # peripheral_already_registered = bluetoothCheck(API_URL, current_network[device])
 
-                if peripheral_already_registered:
-                    send(API_URL, current_network[device])
-                    network[device] = current_network[device]
+                # if peripheral_already_registered:
+                    # send(API_URL, current_network[device])
+                network[device] = current_network[device]
 
             for device in removing:
 
                 print('REMOVING: {}'.format(network[device]))
-                peripheral_already_registered = bluetoothCheck(API_URL, network[device])
+                # peripheral_already_registered = bluetoothCheck(API_URL, network[device])
                 
-                if not peripheral_already_registered:
-                    remove(API_URL, network[device])
-                    del network[device]
+                # if not peripheral_already_registered:
+                    # remove(API_URL, network[device])
+                del network[device]
 
-        e.wait(timeout=90)
+        # e.wait(timeout=90)

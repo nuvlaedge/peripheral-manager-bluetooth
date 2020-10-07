@@ -1,3 +1,5 @@
-requests
 pybluez
 gattlib
+requests
+docker
+packaging
