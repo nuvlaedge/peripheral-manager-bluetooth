@@ -48,30 +48,33 @@ def wait_bootstrap(context_file):
     return
 
 
-def bluetoothCheck(api_url, currentDevices):
+def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
 
-    logging.info('Checking if Bluetooth Device is already published')
-
-    get_bluetooth = requests.get(api_url + '?identifier_pattern=' +
-                                currentDevices['identifier'])
-
-    logging.info(get_bluetooth.json())
-
-    if not get_bluetooth.ok or \
-        not isinstance(get_bluetooth.json(), list) \
-            or len(get_bluetooth.json()) == 0:
-
-        logging.info('Bluetooth Device hasnt been published.')
-        return False
-
-    elif get_bluetooth.json() != currentDevices:
-        logging.info('Network has changed')
-        return False
-
-    logging.info('Bluetooth device has already been published.')
+    if mac_addr in os.listdir(peripheral_dir):
+        return True
     return False
-    
+
+
+def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
+
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
+
+    with open(file_path, 'w') as outfile:
+        json.dump(device_file, outfile)
+
+
+def removeDeviceFile(device_mac_addr, peripheral_dir):
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
+
+    os.unlink(file_path)
+
+
+def readDeviceFile(device_mac_addr, peripheral_dir):
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
+
+    return json.load(open(file_path))
+
 
 def deviceDiscovery():
     """
@@ -136,16 +139,10 @@ def add(data, api_url, activated_path, cookies_file):
     api_key = activated['api-key']
     secret_key = activated['secret-key']
     
-    login = api.login_apikey(api_key, secret_key)
+    api.login_apikey(api_key, secret_key)
 
-    if login.status_code == 201 or login.status_code == 200:
-        response = api.add('nuvlabox-peripheral', data).data
-        if response['status'] == 200:
-            return response['resource-id']
-        else:
-            return ''
-    else:
-        return ''
+    response = api.add('nuvlabox-peripheral', data).data
+    return response['resource-id']
 
 
 def remove(resource_id, api_url, activated_path, cookies_file):
@@ -156,22 +153,17 @@ def remove(resource_id, api_url, activated_path, cookies_file):
     api_key = activated['api-key']
     secret_key = activated['secret-key']
     
-    login = api.login_apikey(api_key, secret_key)
+    api.login_apikey(api_key, secret_key)
 
-    if login.status_code == 201 or login.status_code == 200:
-        response = api.delete(resource_id).data
-        if response['status'] == 200:
-            return response['resource-id']
-        else:
-            return ''
-    else:
-        return ''
+    response = api.delete(resource_id).data
+    return response['resource-id']
 
 if __name__ == "__main__":
 
     activated_path = '/home/pi/nuvlabox/shared/.activated'
     context_path = '/home/pi/nuvlabox/shared/.context'
     cookies_file = '/home/pi/nuvlabox/shared/cookies'
+    peripheral_path = '/home/pi/nuvlabox/shared/peripherals'
 
     context = json.load(open(context_path))
 
@@ -182,11 +174,9 @@ if __name__ == "__main__":
 
     init_logger()
 
-    API_BASE_URL = "https://nuvla.io"
+    API_URL = "https://nuvla.io"
 
     # wait_bootstrap()
-
-    API_URL = API_BASE_URL + "/peripheral"
 
     # e = Event()
 
@@ -207,22 +197,26 @@ if __name__ == "__main__":
 
             for device in publishing:
 
-    #             peripheral_already_registered = \
-    #                 bluetoothCheck(API_URL, current_devices[device])
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, current_devices[device])
 
-    #             if not peripheral_already_registered:
-                print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
-    #                 resource_id = add(testPut, 'https://nuvla.io', activated_path, cookies_file)
-                devices[device] = {'resource_id': 'resource_id', 'message': current_devices[device]}
+                if not peripheral_already_registered:
+
+                    print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
+                    resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
+                    devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                    createDeviceFile(device, devices[device], peripheral_path)
+
 
             for device in removing:
 
-    #             peripheral_already_registered = \
-    #                 bluetoothCheck(API_URL, devices[device])
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, devices[device])
 
-    #             if peripheral_already_registered:
-                print('REMOVING: {}'.format(devices[device]), flush=True)
-    #                 remove(API_URL, devices[device]['resource_id'])
-                del devices[device]
-
+                if peripheral_already_registered:
+                    print('REMOVING: {}'.format(devices[device]), flush=True)
+                    read_file = readDeviceFile(device, peripheral_path)
+                    remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
+                    del devices[device]
+                    removeDeviceFile(device, peripheral_path)
     #     e.wait(timeout=90)
