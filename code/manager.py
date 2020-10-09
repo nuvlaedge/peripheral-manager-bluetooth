@@ -14,8 +14,6 @@ import sys
 import time
 from threading import Event
 import json
-import docker
-from packaging import version
 from nuvla.api import Api
 import os
 
@@ -172,9 +170,9 @@ def remove(resource_id, api_url, activated_path, cookies_file):
 
 if __name__ == "__main__":
 
-    activated_path = '/home/quietswami/nuvlabox/shared/.activated'
-    context_path = '/home/quietswami/nuvlabox/shared/.context'
-    cookies_file = '/home/quietswami/nuvlabox/shared/cookies'
+    activated_path = '/home/pi/nuvlabox/shared/.activated'
+    context_path = '/home/pi/nuvlabox/shared/.context'
+    cookies_file = '/home/pi/nuvlabox/shared/cookies'
 
     context = json.load(open(context_path))
 
