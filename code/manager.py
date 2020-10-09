@@ -160,10 +160,10 @@ def remove(resource_id, api_url, activated_path, cookies_file):
 
 if __name__ == "__main__":
 
-    activated_path = '/home/pi/nuvlabox/shared/.activated'
-    context_path = '/home/pi/nuvlabox/shared/.context'
-    cookies_file = '/home/pi/nuvlabox/shared/cookies'
-    peripheral_path = '/home/pi/nuvlabox/shared/peripherals'
+    activated_path = '/srv/nuvlabox/shared/.activated'
+    context_path = '/srv/nuvlabox/shared/.context'
+    cookies_file = '/srv/nuvlabox/shared/cookies'
+    peripheral_path = '/srv/nuvlabox/shared/peripherals'
 
     context = json.load(open(context_path))
 
@@ -176,9 +176,9 @@ if __name__ == "__main__":
 
     API_URL = "https://nuvla.io"
 
-    # wait_bootstrap()
+    wait_bootstrap()
 
-    # e = Event()
+    e = Event()
 
     devices = {}
     
@@ -219,4 +219,6 @@ if __name__ == "__main__":
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
                     del devices[device]
                     removeDeviceFile(device, peripheral_path)
-    #     e.wait(timeout=90)
+
+
+        e.wait(timeout=90)
