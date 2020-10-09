@@ -213,7 +213,7 @@ if __name__ == "__main__":
     #             if not peripheral_already_registered:
                 print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
     #                 resource_id = add(testPut, 'https://nuvla.io', activated_path, cookies_file)
-                devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                devices[device] = {'resource_id': 'resource_id', 'message': current_devices[device]}
 
             for device in removing:
 
