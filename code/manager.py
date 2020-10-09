@@ -125,7 +125,6 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
                     "identifier": device[0][0],
                     "interface": device[-1],
                 }
-    print(output)
     return output
 
 
@@ -198,32 +197,32 @@ if __name__ == "__main__":
         current_devices = bluetoothManager(nuvlabox_id, version)
         print('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
         
-    #     if current_devices != devices and current_devices:
+        if current_devices != devices and current_devices:
 
-    #         devices_set = set(devices.keys())
-    #         current_devices_set = set(current_devices.keys())
+            devices_set = set(devices.keys())
+            current_devices_set = set(current_devices.keys())
 
-    #         publishing = current_devices_set - devices_set
-    #         removing = devices_set - current_devices_set
+            publishing = current_devices_set - devices_set
+            removing = devices_set - current_devices_set
 
-    #         for device in publishing:
+            for device in publishing:
 
     #             peripheral_already_registered = \
     #                 bluetoothCheck(API_URL, current_devices[device])
 
     #             if not peripheral_already_registered:
-    #                 print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
+                print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
     #                 resource_id = add(testPut, 'https://nuvla.io', activated_path, cookies_file)
-    #                 devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
 
-    #         for device in removing:
+            for device in removing:
 
     #             peripheral_already_registered = \
     #                 bluetoothCheck(API_URL, devices[device])
 
     #             if peripheral_already_registered:
-    #                 print('REMOVING: {}'.format(devices[device]), flush=True)
+                print('REMOVING: {}'.format(devices[device]), flush=True)
     #                 remove(API_URL, devices[device]['resource_id'])
-    #                 del devices[device]
+                del devices[device]
 
     #     e.wait(timeout=90)
