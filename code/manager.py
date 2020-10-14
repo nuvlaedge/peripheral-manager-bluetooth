@@ -131,6 +131,7 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
                     "identifier": device[0][0],
                     "interface": device[-1],
                 }
+
     return output
 
 
