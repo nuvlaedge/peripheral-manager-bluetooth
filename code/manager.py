@@ -31,7 +31,7 @@ def init_logger():
     root.addHandler(handler)
 
 
-def wait_bootstrap(context_file):
+def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
     """
     Waits for the NuvlaBox to finish bootstrapping, by checking
         the context file.
@@ -43,6 +43,9 @@ def wait_bootstrap(context_file):
         time.sleep(5)
         if os.path.isfile(context_file):
             is_context_file = True
+
+    if peripheral_path not in os.listdir(base_peripheral_path):
+        os.mkdir(peripheral_path)
 
     logging.info('NuvlaBox has been initialized.')
     return
@@ -163,12 +166,10 @@ if __name__ == "__main__":
     activated_path = '/srv/nuvlabox/shared/.activated'
     context_path = '/srv/nuvlabox/shared/.context'
     cookies_file = '/srv/nuvlabox/shared/cookies'
-    peripheral_path = '/srv/nuvlabox/shared/peripherals'
+    base_peripheral_path = '/srv/nuvlabox/shared/peripherals'
+    peripheral_path = '/srv/nuvlabox/shared/peripherals/bluetooth'
 
-    context = json.load(open(context_path))
 
-    version = context['version']
-    nuvlabox_id = context['id']
 
     print('BLUETOOTH MANAGER STARTED')
 
@@ -176,7 +177,12 @@ if __name__ == "__main__":
 
     API_URL = "https://nuvla.io"
 
-    wait_bootstrap()
+    wait_bootstrap(context_path, base_peripheral_path, peripheral_path)
+
+    context = json.load(open(context_path))
+
+    NUVLABOX_VERSION = context['version']
+    NUVLABOX_ID = context['id']
 
     e = Event()
 
@@ -184,7 +190,7 @@ if __name__ == "__main__":
     
     while True:
 
-        current_devices = bluetoothManager(nuvlabox_id, version)
+        current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
         print('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
         
         if current_devices != devices and current_devices:
@@ -219,6 +225,5 @@ if __name__ == "__main__":
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
                     del devices[device]
                     removeDeviceFile(device, peripheral_path)
-
 
         e.wait(timeout=90)
