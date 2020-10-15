@@ -239,7 +239,7 @@ if __name__ == "__main__":
 
                     print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
                     resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
-                    createDeviceFile(device, devices[device], peripheral_path)
+                    createDeviceFile(device, current_devices[device], peripheral_path)
 
                 devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
                 print('POS APPEND DEVICES: {}'.format(devices))
