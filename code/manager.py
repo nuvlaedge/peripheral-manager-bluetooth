@@ -215,7 +215,7 @@ if __name__ == "__main__":
             for device in publishing:
 
                 peripheral_already_registered = \
-                    bluetoothCheck(peripheral_path, current_devices[device])
+                    bluetoothCheck(peripheral_path, current_devices[device]['identifier'])
 
                 if not peripheral_already_registered:
 
@@ -228,7 +228,7 @@ if __name__ == "__main__":
             for device in removing:
 
                 peripheral_already_registered = \
-                    bluetoothCheck(peripheral_path, devices[device])
+                    bluetoothCheck(peripheral_path, devices[device]['identifier'])
                 print(peripheral_already_registered)
                 print('REMOVING: {}'.format(device))
 
