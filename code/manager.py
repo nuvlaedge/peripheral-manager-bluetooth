@@ -160,7 +160,7 @@ def add(data, api_url, activated_path, cookies_file):
 
 
 def remove(resource_id, api_url, activated_path, cookies_file):
-    
+    print('REMOVING FROM NUVLA: {}'.format(resource_id))
     api = Api(api_url)
 
     activated = json.load(open(activated_path))
