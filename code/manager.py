@@ -209,9 +209,9 @@ if __name__ == "__main__":
 
             publishing = current_devices_set - devices_set
             removing = devices_set - current_devices_set
-            print(publishing)
-            print(removing)
-            
+            print('Publishing: {}'.format(publishing))
+            print('Removing: {}'.format(removing))
+
             for device in publishing:
 
                 peripheral_already_registered = \
@@ -230,7 +230,10 @@ if __name__ == "__main__":
                 peripheral_already_registered = \
                     bluetoothCheck(peripheral_path, devices[device])
 
+                print('REMOVING: {}'.format(device))
+
                 if peripheral_already_registered:
+
                     print('REMOVING: {}'.format(devices[device]), flush=True)
                     read_file = readDeviceFile(device, peripheral_path)
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
