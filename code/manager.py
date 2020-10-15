@@ -229,7 +229,7 @@ if __name__ == "__main__":
 
                 peripheral_already_registered = \
                     bluetoothCheck(peripheral_path, devices[device])
-
+                print(peripheral_already_registered)
                 print('REMOVING: {}'.format(device))
 
                 if peripheral_already_registered:
