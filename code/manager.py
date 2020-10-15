@@ -233,14 +233,16 @@ if __name__ == "__main__":
 
                 print('EXISTS: {}'.format(peripheral_already_registered))
 
+                resource_id = ''
+
                 if not peripheral_already_registered:
 
                     print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
                     resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
-                    devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
-                    print('POS APPEND DEVICES: {}'.format(devices))
                     createDeviceFile(device, devices[device], peripheral_path)
 
+                devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                print('POS APPEND DEVICES: {}'.format(devices))
 
             for device in removing:
                 
@@ -256,7 +258,8 @@ if __name__ == "__main__":
                     print('REMOVING: {}'.format(devices[device]), flush=True)
                     read_file = readDeviceFile(device, peripheral_path)
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
-                    del devices[device]
                     removeDeviceFile(device, peripheral_path)
+                
+                del devices[device]
 
         e.wait(timeout=90)
