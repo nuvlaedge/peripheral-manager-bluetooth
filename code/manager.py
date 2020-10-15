@@ -256,7 +256,11 @@ if __name__ == "__main__":
                 if peripheral_already_registered:
 
                     print('REMOVING: {}'.format(devices[device]), flush=True)
+                    
                     read_file = readDeviceFile(device, peripheral_path)
+
+                    print(read_file)
+                    
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
                     removeDeviceFile(device, peripheral_path)
                 
