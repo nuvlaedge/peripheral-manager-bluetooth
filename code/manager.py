@@ -121,22 +121,25 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
 
     try:
         bluetoothDevices = deviceDiscovery()
+        print(bluetoothDevices)
     except:
         bluetoothDevices = []
 
     try:
         bleDevices = bleDeviceDiscovery()
+        print(bleDevices)
     except:
         bleDevices = []
 
     bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
     if len(bluetooth) > 0:
         for device in bluetooth:
+            name = "Unknown" if device[0][1] == "" else device[0][1]
             output[device[0][0]] = {
                     "parent": nuvlabox_id,
                     "version": nuvlabox_version,
                     "available": True,
-                    "name": device[0][1],
+                    "name": name,
                     "classes": [],
                     "identifier": device[0][0],
                     "interface": device[-1],
