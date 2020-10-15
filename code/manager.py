@@ -172,6 +172,21 @@ def remove(resource_id, api_url, activated_path, cookies_file):
     response = api.delete(resource_id).data
     return response['resource-id']
 
+
+def diff(before, after):
+    enter = []
+    leaving = []
+
+    for key in before.keys():
+        if key not in after.keys():
+            leaving.append(key)
+    
+    for key in after.keys():
+        if key not in before.keys():
+            enter.append(key) 
+
+    return enter, leaving
+
 if __name__ == "__main__":
 
     activated_path = '/home/pi/shared/.activated'
@@ -210,8 +225,12 @@ if __name__ == "__main__":
             publishing = current_devices_set - devices_set
             removing = devices_set - current_devices_set
             
+            publishing, removing = diff(devices, current_devices)
+            
             print('Publishing: {}'.format(publishing))
             print('Removing: {}'.format(removing))
+
+
 
             for device in publishing:
 
