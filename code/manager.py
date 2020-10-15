@@ -63,6 +63,7 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
 def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
 
+
     if mac_addr in os.listdir(peripheral_dir):
         return True
     return False
@@ -212,7 +213,7 @@ if __name__ == "__main__":
             for device in publishing:
 
                 peripheral_already_registered = \
-                    bluetoothCheck(API_URL, current_devices[device])
+                    bluetoothCheck(peripheral_path, current_devices[device])
 
                 if not peripheral_already_registered:
 
@@ -225,7 +226,7 @@ if __name__ == "__main__":
             for device in removing:
 
                 peripheral_already_registered = \
-                    bluetoothCheck(API_URL, devices[device])
+                    bluetoothCheck(peripheral_path, devices[device])
 
                 if peripheral_already_registered:
                     print('REMOVING: {}'.format(devices[device]), flush=True)
