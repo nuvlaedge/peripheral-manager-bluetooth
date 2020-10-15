@@ -209,7 +209,9 @@ if __name__ == "__main__":
 
             publishing = current_devices_set - devices_set
             removing = devices_set - current_devices_set
-
+            print(publishing)
+            print(removing)
+            
             for device in publishing:
 
                 peripheral_already_registered = \
