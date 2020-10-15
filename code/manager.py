@@ -226,18 +226,19 @@ if __name__ == "__main__":
             print('Publishing: {}'.format(publishing))
             print('Removing: {}'.format(removing))
 
-
-
             for device in publishing:
 
                 peripheral_already_registered = \
                     bluetoothCheck(peripheral_path, current_devices[device]['identifier'])
+
+                print('EXISTS: {}'.format(peripheral_already_registered))
 
                 if not peripheral_already_registered:
 
                     print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
                     resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
                     devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                    print('DEVICES: {}'.format(devices))
                     createDeviceFile(device, devices[device], peripheral_path)
 
 
@@ -245,6 +246,7 @@ if __name__ == "__main__":
 
                 peripheral_already_registered = \
                     bluetoothCheck(peripheral_path, devices[device]['identifier'])
+                
                 print(peripheral_already_registered)
                 print('REMOVING: {}'.format(device))
 
