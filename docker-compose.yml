@@ -9,7 +9,7 @@ services:
       - /var/run/dbus:/var/run/dbus
       - /opt/bluetooth:/var/lib/bluetooth
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - nuvlabox_nuvlabox-db:/srv/nuvlabox/shared
+      - nuvlabox-db:/srv/nuvlabox/shared
     labels:
       - nuvlabox.component=True
       - nuvlabox.deployment=production
