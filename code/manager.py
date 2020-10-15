@@ -204,11 +204,12 @@ if __name__ == "__main__":
         
         if current_devices != devices and current_devices:
 
-            devices_set = set(devices.keys())
-            current_devices_set = set(current_devices.keys())
+            devices_set = devices.keys()
+            current_devices_set = current_devices.keys()
 
             publishing = current_devices_set - devices_set
             removing = devices_set - current_devices_set
+            
             print('Publishing: {}'.format(publishing))
             print('Removing: {}'.format(removing))
 
