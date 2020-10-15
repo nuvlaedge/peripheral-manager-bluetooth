@@ -170,8 +170,6 @@ if __name__ == "__main__":
     base_peripheral_path = '/srv/nuvlabox/shared/peripherals'
     peripheral_path = '/srv/nuvlabox/shared/peripherals/bluetooth'
 
-
-
     print('BLUETOOTH MANAGER STARTED')
 
     init_logger()
