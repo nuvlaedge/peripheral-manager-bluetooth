@@ -62,8 +62,8 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
 
 def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
-
-
+    print('PATH: {}'.format(peripheral_dir))
+    print('MAC ADDR: {}'.format(mac_addr))
     if mac_addr in os.listdir(peripheral_dir):
         return True
     return False
