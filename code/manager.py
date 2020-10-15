@@ -172,11 +172,11 @@ def remove(resource_id, api_url, activated_path, cookies_file):
 
 if __name__ == "__main__":
 
-    activated_path = '/srv/nuvlabox/shared/.activated'
-    context_path = '/srv/nuvlabox/shared/.context'
-    cookies_file = '/srv/nuvlabox/shared/cookies'
-    base_peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
-    peripheral_path = '/srv/nuvlabox/shared/.peripherals/bluetooth'
+    activated_path = '/home/pi/shared/.activated'
+    context_path = '/home/pi/shared/.context'
+    cookies_file = '/home/pi/shared/cookies'
+    base_peripheral_path = '/home/pi/shared/.peripherals/'
+    peripheral_path = '/home/pi/shared/.peripherals/bluetooth'
 
     print('BLUETOOTH MANAGER STARTED')
 
