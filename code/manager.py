@@ -47,11 +47,13 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
         logging.info('Waiting for context file')
 
     peripheral = False
+
     while not peripheral:
         logging.info('Wating for peripheral directory...')
         if os.path.isdir(base_peripheral_path) and not os.path.isdir(peripheral_path):
             os.mkdir(peripheral_path)
             peripheral = True
+            logging.info('PERIPHERAL: {}'.format(peripheral))
 
     logging.info('NuvlaBox has been initialized.')
     return
