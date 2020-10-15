@@ -14,11 +14,8 @@ import sys
 import time
 from threading import Event
 import json
-import docker
-from packaging import version
-import nuvla
-
-image = 'bluetooth_information:{}'
+from nuvla.api import Api
+import os
 
 
 def init_logger():
@@ -34,108 +31,53 @@ def init_logger():
     root.addHandler(handler)
 
 
-def wait_bootstrap(healthcheck_endpoint="http://agent/api/healthcheck"):
+def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
     """
-    Simply waits for the NuvlaBox to finish bootstrapping, by pinging
-        the Agent API
+    Waits for the NuvlaBox to finish bootstrapping, by checking
+        the context file.
     :returns
     """
+    is_context_file = False
 
-    logging.info("Checking if NuvlaBox has been initialized...")
-
-    r = requests.get(healthcheck_endpoint)
-
-    while not r.ok:
+    while not is_context_file:
         time.sleep(5)
-        r = requests.get(healthcheck_endpoint)
+        if os.path.isfile(context_file):
+            is_context_file = True
+
+    if peripheral_path not in os.listdir(base_peripheral_path):
+        os.mkdir(peripheral_path)
 
     logging.info('NuvlaBox has been initialized.')
     return
 
 
-def publish(url, assets):
-    """
-    API publishing function.
-    """
-
-    x = requests.post(url, json=assets)
-    return x.json()
-
-
-def send(url, assets):
-    """ Sends POST request for registering new peripheral """
-
-    logging.info("Sending Bluetooth Device information to Nuvla")
-    return publish(url, assets)
-
-
-def remove(url, assets):
-    logging.info("Removing Bluetooth Device from Nuvla")
-    x = requests.delete(url, json=assets)
-    return x.json()
-
-
-def bluetoothCheck(api_url, currentDevices):
+def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
 
-    logging.info('Checking if Bluetooth Device is already published')
-
-    get_bluetooth = requests.get(api_url + '?identifier_pattern=' +
-                                currentDevices['identifier'])
-
-    logging.info(get_bluetooth.json())
-
-    if not get_bluetooth.ok or \
-        not isinstance(get_bluetooth.json(), list) \
-            or len(get_bluetooth.json()) == 0:
-
-        logging.info('Bluetooth Device hasnt been published.')
-        return False
-
-    elif get_bluetooth.json() != currentDevices:
-        logging.info('Network has changed')
-        return False
-
-    logging.info('Bluetooth device has already been published.')
+    if mac_addr in os.listdir(peripheral_dir):
+        return True
     return False
-    
-
-def getCurrentImageVersion(client):
-
-    peripheralVersion = ''
-    bluetoothVersion = ''
-    
-    for container in client.containers.list():
-        img, tag = container.image.attrs['RepoTags'][0].split(':')
-        if img == 'nuvlabox/peripheral-manager-bluetooth':
-            peripheralVersion = tag
-        elif img == image:
-            bluetoothVersion = tag
-
-    if version.parse(peripheralVersion) > version.parse(bluetoothVersion):
-        return peripheralVersion
-
-    else:
-        return '0.0.1'
 
 
-def launchSideContainer():
-    client = docker.from_env()
-    volumes = {}
+def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
 
-    currentVersion = getCurrentImageVersion(client)
-    img = image.format(currentVersion)
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
 
-    dbus = '/var/run/dbus'
-    volumes[dbus] = {'bind': dbus, 'mode': 'ro'}
+    with open(file_path, 'w') as outfile:
+        json.dump(device_file, outfile)
 
-    if len(client.images.list(img)) == 0 and currentVersion != '':
-        logging.info('Build CUDA Cores Image')
-        client.images.build(path='.', tag=img, dockerfile='Dockerfile.bluetooth')
 
-    output = client.containers.run(img, network_mode="host", volumes=volumes)
-    print('OUTPUT: {}'.format(output))
-    return output
+def removeDeviceFile(device_mac_addr, peripheral_dir):
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
+
+    os.unlink(file_path)
+
+
+def readDeviceFile(device_mac_addr, peripheral_dir):
+    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
+
+    return json.load(open(file_path))
+
 
 def deviceDiscovery():
     """
@@ -163,7 +105,7 @@ def compareBluetooth(bluetooth, ble):
     return output
 
 
-def bluetoothManager():
+def bluetoothManager(nuvlabox_id, nuvlabox_version):
 
     output = {}
 
@@ -181,58 +123,108 @@ def bluetoothManager():
     if len(bluetooth) > 0:
         for device in bluetooth:
             output[device[0][0]] = {
+                    "parent": nuvlabox_id,
+                    "version": nuvlabox_version,
                     "available": True,
                     "name": device[0][1],
                     "classes": [],
                     "identifier": device[0][0],
                     "interface": device[-1],
                 }
-    print(output)
+
     return output
 
 
+def add(data, api_url, activated_path, cookies_file):
+
+    api = Api(api_url)
+
+    activated = json.load(open(activated_path))
+    api_key = activated['api-key']
+    secret_key = activated['secret-key']
+    
+    api.login_apikey(api_key, secret_key)
+
+    response = api.add('nuvlabox-peripheral', data).data
+    return response['resource-id']
+
+
+def remove(resource_id, api_url, activated_path, cookies_file):
+    
+    api = Api(api_url)
+
+    activated = json.load(open(activated_path))
+    api_key = activated['api-key']
+    secret_key = activated['secret-key']
+    
+    api.login_apikey(api_key, secret_key)
+
+    response = api.delete(resource_id).data
+    return response['resource-id']
+
 if __name__ == "__main__":
+
+    activated_path = '/srv/nuvlabox/shared/.activated'
+    context_path = '/srv/nuvlabox/shared/.context'
+    cookies_file = '/srv/nuvlabox/shared/cookies'
+    base_peripheral_path = '/srv/nuvlabox/shared/peripherals'
+    peripheral_path = '/srv/nuvlabox/shared/peripherals/bluetooth'
+
+
 
     print('BLUETOOTH MANAGER STARTED')
 
     init_logger()
 
-    API_BASE_URL = "http://agent/api"
+    API_URL = "https://nuvla.io"
 
-    # wait_bootstrap()
+    wait_bootstrap(context_path, base_peripheral_path, peripheral_path)
 
-    API_URL = API_BASE_URL + "/peripheral"
+    context = json.load(open(context_path))
 
-    # e = Event()
+    NUVLABOX_VERSION = context['version']
+    NUVLABOX_ID = context['id']
+
+    e = Event()
 
     devices = {}
-
+    
     while True:
+
+        current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
+        print('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
         
-        print('Starting Search')
-        current_network = launchSideContainer()
-        print('Search Done')
-        if current_network != network and current_network != []:
+        if current_devices != devices and current_devices:
+
+            devices_set = set(devices.keys())
+            current_devices_set = set(current_devices.keys())
 
             publishing = current_devices_set - devices_set
             removing = devices_set - current_devices_set
 
             for device in publishing:
 
-                print('PUBLISHING: {}'.format(current_network[device]))
-                # peripheral_already_registered = bluetoothCheck(API_URL, current_network[device])
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, current_devices[device])
 
-                # if peripheral_already_registered:
-                    # send(API_URL, current_network[device])
-                network[device] = current_network[device]
+                if not peripheral_already_registered:
+
+                    print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
+                    resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
+                    devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                    createDeviceFile(device, devices[device], peripheral_path)
+
 
             for device in removing:
 
-                print('REMOVING: {}'.format(network[device]))
-                # peripheral_already_registered = bluetoothCheck(API_URL, network[device])
-                
-                # if not peripheral_already_registered:
-                    # remove(API_URL, network[device])
-                del network[device]
+                peripheral_already_registered = \
+                    bluetoothCheck(API_URL, devices[device])
 
-        # e.wait(timeout=90)
+                if peripheral_already_registered:
+                    print('REMOVING: {}'.format(devices[device]), flush=True)
+                    read_file = readDeviceFile(device, peripheral_path)
+                    remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
+                    del devices[device]
+                    removeDeviceFile(device, peripheral_path)
+
+        e.wait(timeout=90)

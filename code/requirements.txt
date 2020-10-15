@@ -1,5 +1,4 @@
 pybluez
 gattlib
 requests
-docker
-packaging
+nuvla-api
