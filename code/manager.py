@@ -245,7 +245,6 @@ if __name__ == "__main__":
 
                 devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
                 createDeviceFile(device, devices[device], peripheral_path)
-                print('POS APPEND DEVICES: {}'.format(devices))
 
             for device in removing:
                 
@@ -262,7 +261,6 @@ if __name__ == "__main__":
                     
                     read_file = readDeviceFile(device, peripheral_path)
 
-                    print(read_file)
                     
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
                     removeDeviceFile(device, peripheral_path)
