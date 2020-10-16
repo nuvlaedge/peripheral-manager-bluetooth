@@ -156,7 +156,7 @@ def remove(resource_id, api_url, activated_path, cookies_file):
     activated = json.load(open(activated_path))
     api_key = activated['api-key']
     secret_key = activated['secret-key']
-    
+
     api.login_apikey(api_key, secret_key)
 
     response = api.delete(resource_id).data
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     e = Event()
 
     devices = {}
-    
+
     while True:
 
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
