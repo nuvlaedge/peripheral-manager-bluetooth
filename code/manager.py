@@ -6,16 +6,18 @@
 This service provides bluetooth device discovery.
 """
 
-import bluetooth
-from gattlib import DiscoveryService  # Used for BLE discovery
+import bluetooth as bt
 import logging
-import requests
 import sys
 import time
-from threading import Event
+import os
 import json
 from nuvla.api import Api
-import os
+from bluetooth.ble import DiscoveryService
+from threading import Event
+
+
+scanning_interval = 30
 
 
 def init_logger():
@@ -50,7 +52,8 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
 
     if not os.path.isdir(peripheral_path):
         while not peripheral:
-            logging.info('Wating for peripheral directory...')
+            time.sleep(5)
+            logging.info('Waiting for peripheral directory...')
             if os.path.isdir(base_peripheral_path):
                 os.mkdir(peripheral_path)
                 peripheral = True
@@ -62,8 +65,6 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
 
 def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
-    print('PATH: {}'.format(peripheral_dir))
-    print('MAC ADDR: {}'.format(mac_addr))
     if mac_addr in os.listdir(peripheral_dir):
         return True
     return False
@@ -93,12 +94,12 @@ def deviceDiscovery():
     """
     Return all discoverable bluetooth devices.
     """
-    return bluetooth.discover_devices(lookup_names=True)
+    return bt.discover_devices(lookup_names=True, lookup_class=True)
 
 
 def bleDeviceDiscovery():
     service = DiscoveryService("hci0")
-    devices = list(service.discover(2).items())
+    devices = service.discover(2)
     return devices
 
 
@@ -106,13 +107,230 @@ def compareBluetooth(bluetooth, ble):
     output = []
 
     for device in bluetooth:
-        if device not in ble:
-            output.append((device, 'bluetooth'))
+        if device[0] not in ble:
+            d = {
+                "identifier": device[0],
+                "class": device[2],
+                "interface": "bluetooth"
+            }
 
-    for device in ble:
-        output.append((device, 'bluetooth-le'))
+            if device[1] != "":
+                d["name"] = device[1]
+
+            output.append(d)
+
+    for device_id, device_name in ble.items():
+        d = {
+            "identifier": device_id,
+            "class": "",    # TODO
+            "interface": "bluetooth-le"
+        }
+
+        if device_name != "":
+            d["name"] = device_name
+
+        output.append(d)
 
     return output
+
+
+def cod_converter(cod_decimal_string):
+    """ From a decimal value of CoD, map and retrieve the corresponding major class of a Bluetooth device
+
+    :param cod_decimal_string: numeric string corresponding to the class of device
+    :return: list of class(es)
+    """
+
+    if not cod_decimal_string or cod_decimal_string == "":
+        return []
+
+    cod_decimal_string = int(cod_decimal_string)
+
+    # Major CoDs
+    classes = {'0': {'major': 'Miscellaneous',
+                     'minor': {}},
+               '1': {
+                   'major': 'Computer',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Uncategorized',
+                       '1': 'Desktop workstation',
+                       '2': 'Server-class computer',
+                       '3': 'Laptop',
+                       '4': 'Handheld PC/PDA (clamshell)',
+                       '5': 'Palm-size PC/PDA',
+                       '6': 'Wearable computer (watch size)',
+                       '7': 'Tablet'}
+               },
+               '2': {
+                   'major': 'Phone',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Uncategorized',
+                       '1': 'Cellular',
+                       '2': 'Cordless',
+                       '3': 'Smartphone',
+                       '4': 'Wired modem or voice gateway',
+                       '5': 'Common ISDN access'
+                   }
+               },
+               '3': {
+                   'major': 'LAN/Network Access Point',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Fully available',
+                       '1': '1% to 17% utilized',
+                       '2': '17% to 33% utilized',
+                       '3': '33% to 50% utilized',
+                       '4': '50% to 67% utilized',
+                       '5': '67% to 83% utilized',
+                       '6': '83% to 99% utilized',
+                       '7': 'No service available'
+                   }
+               },
+               '4': {
+                   'major': 'Audio/Video',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Uncategorized',
+                       '1': 'Wearable Headset Device',
+                       '2': 'Hands-free Device',
+                       '3': '(Reserved)',
+                       '4': 'Microphone',
+                       '5': 'Loudspeaker',
+                       '6': 'Headphones',
+                       '7': 'Portable Audio',
+                       '8': 'Car audio',
+                       '9': 'Set-top box',
+                       '10': 'HiFi Audio Device',
+                       '11': 'VCR',
+                       '12': 'Video Camera',
+                       '13': 'Camcorder',
+                       '14': 'Video Monitor',
+                       '15': 'Video Display and Loudspeaker',
+                       '16': 'Video Conferencing',
+                       '17': '(Reserved)',
+                       '18': 'Gaming/Toy'
+                   }
+               },
+               '5': {
+                   'major': 'Peripheral',
+                   'minor': {
+                       'bitwise': False,
+                       'feel': {
+                           '0': 'Not Keyboard / Not Pointing Device',
+                           '1': 'Keyboard',
+                           '2': 'Pointing device',
+                           '3': 'Combo keyboard/pointing device'
+                       },
+                       '0': 'Uncategorized',
+                       '1': 'Joystick',
+                       '2': 'Gamepad',
+                       '3': 'Remote control',
+                       '4': 'Sensing device',
+                       '5': 'Digitizer tablet',
+                       '6': 'Card Reader',
+                       '7': 'Digital Pen',
+                       '8': 'Handheld scanner for bar-codes, RFID, etc.',
+                       '9': 'Handheld gestural input device'
+                   }
+               },
+               '6': {
+                   'major': 'Imaging',
+                   'minor': {
+                       'bitwise': True,
+                       '4': 'Display',
+                       '8': 'Camera',
+                       '16': 'Scanner',
+                       '32': 'Printer'
+                   }
+               },
+               '7': {
+                   'major': 'Wearable',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Wristwatch',
+                       '1': 'Pager',
+                       '2': 'Jacket',
+                       '3': 'Helmet',
+                       '4': 'Glasses'
+                   }
+               },
+               '8': {
+                   'major': 'Toy',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Robot',
+                       '1': 'Vehicle',
+                       '2': 'Doll / Action figure',
+                       '3': 'Controller',
+                       '4': 'Game'
+                   }
+               },
+               '9': {
+                   'major': 'Health',
+                   'minor': {
+                       'bitwise': False,
+                       '0': 'Undefined',
+                       '1': 'Blood Pressure Monitor',
+                       '2': 'Thermometer',
+                       '3': 'Weighing Scale',
+                       '4': 'Glucose Meter',
+                       '5': 'Pulse Oximeter',
+                       '6': 'Heart/Pulse Rate Monitor',
+                       '7': 'Health Data Display',
+                       '8': 'Step Counter',
+                       '9': 'Body Composition Analyzer',
+                       '10': 'Peak Flow Monitor',
+                       '11': 'Medication Monitor',
+                       '12': 'Knee Prosthesis',
+                       '13': 'Ankle Prosthesis',
+                       '14': 'Generic Health Manager',
+                       '15': 'Personal Mobility Device'
+                   }
+               }}
+
+    major_number = (cod_decimal_string >> 8) & 0x1f
+    minor_number = (cod_decimal_string >> 2) & 0x3f
+
+    minor_class_name = None
+    minor = {'minor': {}}
+    if major_number == 31:
+        major = {'major': 'Uncategorized'}
+    else:
+        major = classes.get(major_number, {'major': 'Reserved'})
+        minor = classes.get(major_number, minor)
+
+    minor_class = minor.get('minor', {})
+    if minor_class.get('bitwise', False):
+        # i.e. imaging
+        for key, value in minor_class.items():
+            try:
+                # if key is an integer, it is good to be evaluated
+                minor_key = int(key)
+            except ValueError:
+                continue
+            except:
+                logging.exception("Failed to evaluate minor device class with key %s" % key)
+                continue
+
+            if minor_number & minor_key:
+                minor_class_name = value
+                break
+    else:
+         minor_class_name = minor_class.get(str(minor_number), 'reserved')
+
+    major_class_name = major.get('major')
+
+    peripheral_classes = [major_class_name, minor_class_name]
+
+    if 'feel' in minor_class:
+        feel_number = minor_number >> 4
+        feel_class_name = minor_class['feel'].get(str(feel_number))
+        if feel_class_name:
+            peripheral_classes.append(feel_class_name)
+
+    return peripheral_classes
 
 
 def bluetoothManager(nuvlabox_id, nuvlabox_version):
@@ -120,29 +338,34 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
     output = {}
 
     try:
+        # list
         bluetoothDevices = deviceDiscovery()
-        print(bluetoothDevices)
+        logging.info(bluetoothDevices)
     except:
         bluetoothDevices = []
+        logging.exception("Failed to discover BT devices")
 
     try:
+        # dict
         bleDevices = bleDeviceDiscovery()
-        print(bleDevices)
+        logging.info(bleDevices)
     except:
         bleDevices = []
+        logging.exception("Failed to discover BLE devices")
 
+    # get formatted list of bt devices [{},...]
     bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
     if len(bluetooth) > 0:
         for device in bluetooth:
-            name = "Unknown" if device[0][1] == "" else device[0][1]
+            name = device.get("name", "unknown")
             output[device[0][0]] = {
                     "parent": nuvlabox_id,
                     "version": nuvlabox_version,
                     "available": True,
                     "name": name,
-                    "classes": [],
-                    "identifier": device[0][0],
-                    "interface": device[-1],
+                    "classes": cod_converter(device.get("class", "")),
+                    "identifier": device.get("identifier"),
+                    "interface": device.get("interface", "bluetooth"),
                 }
 
     return output
@@ -190,7 +413,12 @@ def diff(before, after):
 
     return enter, leaving
 
+
 if __name__ == "__main__":
+
+    init_logger()
+    logging.info('BLUETOOTH MANAGER STARTED')
+    e = Event()
 
     activated_path = '/srv/nuvlabox/shared/.activated'
     context_path = '/srv/nuvlabox/shared/.context'
@@ -198,73 +426,73 @@ if __name__ == "__main__":
     base_peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
     peripheral_path = '/srv/nuvlabox/shared/.peripherals/bluetooth'
 
-    print('BLUETOOTH MANAGER STARTED')
+    API_URL = os.getenv("NUVLA_ENDPOINT", "nuvla.io")
+    while API_URL[-1] == "/":
+        API_URL = API_URL[:-1]
 
-    init_logger()
-
-    API_URL = "https://nuvla.io"
+    API_URL = API_URL.replace("https://", "")
 
     wait_bootstrap(context_path, base_peripheral_path, peripheral_path)
 
-    context = json.load(open(context_path))
+    while True:
+        try:
+            with open(context_path) as c:
+                context = json.loads(c.read())
+            NUVLABOX_VERSION = context['version']
+            NUVLABOX_ID = context['id']
+            break
+        except (json.decoder.JSONDecodeError, KeyError):
+            logging.exception(f"Waiting for {context_path} to be populated")
+            e.wait(timeout=5)
 
-    NUVLABOX_VERSION = context['version']
-    NUVLABOX_ID = context['id']
-
-    e = Event()
-
-    devices = {}
+    old_devices = {}
 
     while True:
 
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
-        print('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
+        logging.info('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
         
-        if current_devices != devices and current_devices:
+        if current_devices != old_devices and current_devices:
 
-            print('DEVICES: {}'.format(devices))
-
-            publishing, removing = diff(devices, current_devices)
+            publishing, removing = diff(old_devices, current_devices)
             
-            print('Publishing: {}'.format(publishing))
-            print('Removing: {}'.format(removing))
+            logging.info('Removing: {}'.format(removing))
 
             for device in publishing:
 
-                peripheral_already_registered = \
-                    bluetoothCheck(peripheral_path, device)
-
-                print('EXISTS: {}'.format(peripheral_already_registered))
+                peripheral_already_registered = bluetoothCheck(peripheral_path, device)
 
                 resource_id = ''
 
                 if not peripheral_already_registered:
 
-                    print('PUBLISHING: {}'.format(current_devices[device]), flush=True)
-                    resource_id = add(current_devices[device], 'https://nuvla.io', activated_path, cookies_file)
+                    logging.info('PUBLISHING: {}'.format(current_devices[device]), flush=True)
+                    try:
+                        resource_id = add(current_devices[device], API_URL, activated_path, cookies_file)
+                    except:
+                        logging.exception(f'Unable to publish peripheral {device}')
 
-                devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
-                createDeviceFile(device, devices[device], peripheral_path)
+                old_devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
+                createDeviceFile(device, old_devices[device], peripheral_path)
 
             for device in removing:
                 
-                print('REMOVING: {}'.format(devices[device]))
+                logging.info('REMOVING: {}'.format(old_devices[device]))
 
                 peripheral_already_registered = \
                     bluetoothCheck(peripheral_path, device)
                 
-                print(peripheral_already_registered)
+                logging.info(peripheral_already_registered)
 
                 if peripheral_already_registered:
 
-                    print('REMOVING: {}'.format(devices[device]), flush=True)
+                    logging.info('REMOVING: {}'.format(old_devices[device]), flush=True)
                     
                     read_file = readDeviceFile(device, peripheral_path)
-
                     
                     remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
                     removeDeviceFile(device, peripheral_path)
                 
-                del devices[device]
+                del old_devices[device]
 
-        e.wait(timeout=90)
+        e.wait(timeout=scanning_interval)

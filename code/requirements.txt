@@ -1,4 +1,2 @@
 pybluez
-gattlib
-requests
 nuvla-api

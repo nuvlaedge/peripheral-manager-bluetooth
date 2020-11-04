@@ -2,12 +2,15 @@ version: "3.6"
 
 services:
   peripheral-manager-bluetooth:
-    image: peripheral-manager-bluetooth
+    build: .
     restart: on-failure
     network_mode: "host"
+    environment:
+      - NUVLABOX_UUID=${NUVLABOX_UUID}
+      - NUVLA_ENDPOINT=${NUVLA_ENDPOINT:-nuvla.io}
+      - NUVLA_ENDPOINT_INSECURE=${NUVLA_ENDPOINT_INSECURE:-False}
     volumes:
       - /var/run/dbus:/var/run/dbus
-      - /opt/bluetooth:/var/lib/bluetooth
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     labels:
       - nuvlabox.component=True
