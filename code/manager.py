@@ -66,8 +66,10 @@ def wait_bootstrap(context_file, base_peripheral_path, peripheral_path):
 def bluetoothCheck(peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
     if mac_addr in os.listdir(peripheral_dir):
-        return True
-    return False
+        file_content = readDeviceFile(mac_addr, peripheral_dir)
+
+        return True, file_content.get('resource-id')
+    return False, None
 
 
 def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
@@ -371,32 +373,23 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
     return output
 
 
-def add(data, api_url, activated_path, cookies_file):
+def authenticate(url, insecure, activated_path):
+    """ Uses the NB ApiKey credential to authenticate against Nuvla
 
-    api = Api(api_url)
+    :return: Api client
+    """
+    api_instance = Api(endpoint='https://{}'.format(url),
+                       insecure=insecure, reauthenticate=True)
 
-    activated = json.load(open(activated_path))
-    api_key = activated['api-key']
-    secret_key = activated['secret-key']
-    
-    api.login_apikey(api_key, secret_key)
+    if os.path.exists(activated_path):
+        with open(activated_path) as apif:
+            apikey = json.loads(apif.read())
+    else:
+        return None
 
-    response = api.add('nuvlabox-peripheral', data).data
-    return response['resource-id']
+    api_instance.login_apikey(apikey['api-key'], apikey['secret-key'])
 
-
-def remove(resource_id, api_url, activated_path, cookies_file):
-    print('REMOVING FROM NUVLA: {}'.format(resource_id))
-    api = Api(api_url)
-
-    activated = json.load(open(activated_path))
-    api_key = activated['api-key']
-    secret_key = activated['secret-key']
-
-    api.login_apikey(api_key, secret_key)
-
-    response = api.delete(resource_id).data
-    return response['resource-id']
+    return api_instance
 
 
 def diff(before, after):
@@ -426,11 +419,22 @@ if __name__ == "__main__":
     base_peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
     peripheral_path = '/srv/nuvlabox/shared/.peripherals/bluetooth'
 
+    nuvla_endpoint_insecure = os.environ["NUVLA_ENDPOINT_INSECURE"] if "NUVLA_ENDPOINT_INSECURE" in os.environ else False
+    if isinstance(nuvla_endpoint_insecure, str):
+        if nuvla_endpoint_insecure.lower() == "false":
+            nuvla_endpoint_insecure = False
+        else:
+            nuvla_endpoint_insecure = True
+    else:
+        nuvla_endpoint_insecure = bool(nuvla_endpoint_insecure)
+
     API_URL = os.getenv("NUVLA_ENDPOINT", "nuvla.io")
     while API_URL[-1] == "/":
         API_URL = API_URL[:-1]
 
     API_URL = API_URL.replace("https://", "")
+
+    api = None
 
     wait_bootstrap(context_path, base_peripheral_path, peripheral_path)
 
@@ -447,6 +451,8 @@ if __name__ == "__main__":
 
     old_devices = {}
 
+    api = authenticate(API_URL, nuvla_endpoint_insecure, activated_path)
+
     while True:
 
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
@@ -455,43 +461,40 @@ if __name__ == "__main__":
         if current_devices != old_devices and current_devices:
 
             publishing, removing = diff(old_devices, current_devices)
-            
-            logging.info('Removing: {}'.format(removing))
 
             for device in publishing:
 
-                peripheral_already_registered = bluetoothCheck(peripheral_path, device)
+                peripheral_already_registered, res_id = bluetoothCheck(peripheral_path, device)
 
-                resource_id = ''
-
+                old_devices[device] = current_devices[device]
                 if not peripheral_already_registered:
 
                     logging.info('PUBLISHING: {}'.format(current_devices[device]), flush=True)
                     try:
-                        resource_id = add(current_devices[device], API_URL, activated_path, cookies_file)
+                        resource_id = api.add('nuvlabox-peripheral', current_devices[device]).data['resource-id']
                     except:
                         logging.exception(f'Unable to publish peripheral {device}')
+                        continue
 
-                old_devices[device] = {'resource_id': resource_id, 'message': current_devices[device]}
-                createDeviceFile(device, old_devices[device], peripheral_path)
+                    createDeviceFile(device,
+                                     {'resource_id': resource_id, 'message': current_devices[device]},
+                                     peripheral_path)
 
             for device in removing:
                 
                 logging.info('REMOVING: {}'.format(old_devices[device]))
 
-                peripheral_already_registered = \
-                    bluetoothCheck(peripheral_path, device)
-                
-                logging.info(peripheral_already_registered)
+                peripheral_already_registered, res_id = bluetoothCheck(peripheral_path, device)
 
-                if peripheral_already_registered:
+                if res_id:
+                    r = api.delete(res_id).data
+                else:
+                    logging.warning(f'Unable to retrieve ID of locally registered device {device}. Local delete only')
 
-                    logging.info('REMOVING: {}'.format(old_devices[device]), flush=True)
-                    
-                    read_file = readDeviceFile(device, peripheral_path)
-                    
-                    remove(read_file['resource_id'], API_URL, activated_path, cookies_file)
+                try:
                     removeDeviceFile(device, peripheral_path)
+                except FileNotFoundError:
+                    logging.warning(f'Peripheral file {peripheral_path}/{device} does not exist. Considered deleted')
                 
                 del old_devices[device]
 
