@@ -362,7 +362,7 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
     if len(bluetooth) > 0:
         for device in bluetooth:
             name = device.get("name", "unknown")
-            output[device[0][0]] = {
+            output[device['identifier']] = {
                     "parent": nuvlabox_id,
                     "version": nuvlabox_version,
                     "available": True,
