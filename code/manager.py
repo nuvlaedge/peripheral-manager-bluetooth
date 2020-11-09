@@ -458,7 +458,7 @@ if __name__ == "__main__":
     while True:
 
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
-        logging.info('CURRENT DEVICES: {}\n'.format(current_devices), flush=True)
+        logging.info('CURRENT DEVICES: {}\n'.format(current_devices))
         
         if current_devices != old_devices and current_devices:
 
@@ -471,7 +471,7 @@ if __name__ == "__main__":
                 old_devices[device] = current_devices[device]
                 if not peripheral_already_registered:
 
-                    logging.info('PUBLISHING: {}'.format(current_devices[device]), flush=True)
+                    logging.info('PUBLISHING: {}'.format(current_devices[device]))
                     try:
                         resource_id = api.add('nuvlabox-peripheral', current_devices[device]).data['resource-id']
                     except:
