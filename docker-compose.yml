@@ -9,9 +9,6 @@ services:
       - NUVLABOX_UUID=${NUVLABOX_UUID}
       - NUVLA_ENDPOINT=${NUVLA_ENDPOINT:-nuvla.io}
       - NUVLA_ENDPOINT_INSECURE=${NUVLA_ENDPOINT_INSECURE:-False}
-    volumes:
-      - /var/run/dbus:/var/run/dbus
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
     labels:
       - nuvlabox.component=True
       - nuvlabox.deployment=production
