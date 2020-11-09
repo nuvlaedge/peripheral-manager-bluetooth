@@ -1,2 +1,4 @@
 pybluez
+#pybluez[ble]
+#bluepy
 nuvla-api

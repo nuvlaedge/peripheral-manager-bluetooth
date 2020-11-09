@@ -1,4 +1,7 @@
-FROM python:3.6-slim
+FROM python:3-slim as builder
+# because of pybluez[ble] which requires gattlib, the dependencies are quite a few unstable for RPi
+# for the future, consider using bluepy instead - which requires privileged access, and does not provide very detailed
+#     information about BLE devices, becoming nuisance to the user
 
 COPY code/requirements.txt /opt/nuvlabox/
 

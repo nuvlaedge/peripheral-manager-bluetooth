@@ -13,7 +13,7 @@ import time
 import os
 import json
 from nuvla.api import Api
-from bluetooth.ble import DiscoveryService
+#from bluetooth.ble import DiscoveryService
 from threading import Event
 
 
@@ -99,10 +99,10 @@ def deviceDiscovery():
     return bt.discover_devices(lookup_names=True, lookup_class=True)
 
 
-def bleDeviceDiscovery():
-    service = DiscoveryService("hci0")
-    devices = service.discover(2)
-    return devices
+# def bleDeviceDiscovery():
+#     service = DiscoveryService("hci0")
+#     devices = service.discover(2)
+#     return devices
 
 
 def compareBluetooth(bluetooth, ble):
@@ -347,13 +347,15 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
         bluetoothDevices = []
         logging.exception("Failed to discover BT devices")
 
-    try:
-        # dict
-        bleDevices = bleDeviceDiscovery()
-        logging.info(bleDevices)
-    except:
-        bleDevices = []
-        logging.exception("Failed to discover BLE devices")
+    bleDevices = {}
+    # TODO: implement reliable BLE discovery that works for RPi
+    # try:
+    #     # dict
+    #     bleDevices = bleDeviceDiscovery()
+    #     logging.info(bleDevices)
+    # except:
+    #     bleDevices = {}
+    #     logging.exception("Failed to discover BLE devices")
 
     # get formatted list of bt devices [{},...]
     bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
