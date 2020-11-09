@@ -149,9 +149,9 @@ def cod_converter(cod_decimal_string):
     cod_decimal_string = int(cod_decimal_string)
 
     # Major CoDs
-    classes = {'0': {'major': 'Miscellaneous',
+    classes = {0: {'major': 'Miscellaneous',
                      'minor': {}},
-               '1': {
+               1: {
                    'major': 'Computer',
                    'minor': {
                        'bitwise': False,
@@ -164,7 +164,7 @@ def cod_converter(cod_decimal_string):
                        '6': 'Wearable computer (watch size)',
                        '7': 'Tablet'}
                },
-               '2': {
+               2: {
                    'major': 'Phone',
                    'minor': {
                        'bitwise': False,
@@ -176,7 +176,7 @@ def cod_converter(cod_decimal_string):
                        '5': 'Common ISDN access'
                    }
                },
-               '3': {
+               3: {
                    'major': 'LAN/Network Access Point',
                    'minor': {
                        'bitwise': False,
@@ -190,7 +190,7 @@ def cod_converter(cod_decimal_string):
                        '7': 'No service available'
                    }
                },
-               '4': {
+               4: {
                    'major': 'Audio/Video',
                    'minor': {
                        'bitwise': False,
@@ -215,7 +215,7 @@ def cod_converter(cod_decimal_string):
                        '18': 'Gaming/Toy'
                    }
                },
-               '5': {
+               5: {
                    'major': 'Peripheral',
                    'minor': {
                        'bitwise': False,
@@ -237,7 +237,7 @@ def cod_converter(cod_decimal_string):
                        '9': 'Handheld gestural input device'
                    }
                },
-               '6': {
+               6: {
                    'major': 'Imaging',
                    'minor': {
                        'bitwise': True,
@@ -247,7 +247,7 @@ def cod_converter(cod_decimal_string):
                        '32': 'Printer'
                    }
                },
-               '7': {
+               7: {
                    'major': 'Wearable',
                    'minor': {
                        'bitwise': False,
@@ -258,7 +258,7 @@ def cod_converter(cod_decimal_string):
                        '4': 'Glasses'
                    }
                },
-               '8': {
+               8: {
                    'major': 'Toy',
                    'minor': {
                        'bitwise': False,
@@ -269,7 +269,7 @@ def cod_converter(cod_decimal_string):
                        '4': 'Game'
                    }
                },
-               '9': {
+               9: {
                    'major': 'Health',
                    'minor': {
                        'bitwise': False,
@@ -458,7 +458,7 @@ if __name__ == "__main__":
     while True:
 
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
-        logging.info('CURRENT DEVICES: {}\n'.format(current_devices))
+        logging.info('CURRENT DEVICES: {}'.format(current_devices))
         
         if current_devices != old_devices and current_devices:
 
