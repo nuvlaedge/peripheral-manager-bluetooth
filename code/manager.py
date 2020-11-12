@@ -68,7 +68,7 @@ def bluetoothCheck(peripheral_dir, mac_addr):
     if mac_addr in os.listdir(peripheral_dir):
         file_content = readDeviceFile(mac_addr, peripheral_dir)
 
-        return True, file_content.get('resource-id')
+        return True, file_content.get('resource_id')
     return False, None
 
 
