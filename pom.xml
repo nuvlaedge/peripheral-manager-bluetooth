@@ -6,7 +6,7 @@
     <groupId>sixsq.nuvlabox.peripheral-manager-bluetooth</groupId>
     <artifactId>peripheral-manager-bluetooth</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.3</version>
     <name>peripheral-manager-bluetooth</name>
     <url>http://sixsq.com/</url>
 
