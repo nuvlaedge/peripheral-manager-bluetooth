@@ -113,7 +113,7 @@ def compareBluetooth(bluetooth, ble):
             d = {
                 "identifier": device[0],
                 "class": device[2],
-                "interface": "bluetooth"
+                "interface": "Bluetooth"
             }
 
             if device[1] != "":
@@ -125,7 +125,7 @@ def compareBluetooth(bluetooth, ble):
         d = {
             "identifier": device_id,
             "class": "",    # TODO
-            "interface": "bluetooth-le"
+            "interface": "Bluetooth-LE"
         }
 
         if device_name != "":
@@ -369,7 +369,7 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
                     "name": name,
                     "classes": cod_converter(device.get("class", "")),
                     "identifier": device.get("identifier"),
-                    "interface": device.get("interface", "bluetooth"),
+                    "interface": device.get("interface", "Bluetooth"),
                 }
 
     return output
