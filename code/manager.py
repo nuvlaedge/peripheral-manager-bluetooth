@@ -55,9 +55,9 @@ def wait_bootstrap(context_file, nuvla_configuration_file, base_peripheral_path,
     with open(nuvla_configuration_file) as nuvla_conf:
         for line in nuvla_conf.read().split():
             try:
-                if line and 'NUVLA_ENDPOINT' in line:
+                if line and 'NUVLA_ENDPOINT=' in line:
                     nuvla_endpoint_raw = line.split('=')[-1]
-                if line and 'NUVLA_ENDPOINT_INSECURE' in line:
+                if line and 'NUVLA_ENDPOINT_INSECURE=' in line:
                     nuvla_endpoint_insecure_raw = bool(line.split('=')[-1])
             except IndexError:
                 pass
