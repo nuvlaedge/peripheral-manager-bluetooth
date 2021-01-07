@@ -530,7 +530,7 @@ if __name__ == "__main__":
         current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
         logging.info('CURRENT DEVICES: {}'.format(current_devices))
         
-        if current_devices != old_devices and current_devices:
+        if current_devices != old_devices:
 
             publishing, removing = diff(old_devices, current_devices)
 
