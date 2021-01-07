@@ -494,6 +494,23 @@ def remove_legacy_peripherals(api_url: str, peripherals_dir: str, protocols: lis
             logging.info(f'Removed all legacy peripherals for interface {proto}: {path}')
 
 
+def get_saved_peripherals(api_url, protocol):
+    """
+    To be used at bootstrap, to check for existing peripherals, just to make sure we delete old and only insert new
+    peripherals, that have been modified during the NuvlaBox shutdown
+
+    :param api_url: url of the agent api for peripherals
+    :param protocol: protocol name = interface
+    :return: map of device identifiers and content
+    """
+
+    query = f'{api_url}?parameter=interface&value={protocol}'
+    r = requests.get(query)
+    r.raise_for_status()
+
+    return r.json()
+
+
 if __name__ == "__main__":
 
     init_logger()
@@ -523,7 +540,7 @@ if __name__ == "__main__":
 
     remove_legacy_peripherals(API_URL, peripheral_path, ["bluetooth"])
 
-    old_devices = {}
+    old_devices = get_saved_peripherals(API_URL, 'Bluetooth')
 
     while True:
 
