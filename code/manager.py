@@ -12,7 +12,7 @@ import sys
 import time
 import os
 import json
-from nuvla.api import Api
+import requests
 #from bluetooth.ble import DiscoveryService
 from threading import Event
 
@@ -33,7 +33,7 @@ def init_logger():
     root.addHandler(handler)
 
 
-def wait_bootstrap(context_file, nuvla_configuration_file, base_peripheral_path, peripheral_path):
+def wait_bootstrap(context_file, api_url, peripheral_path):
     """
     Waits for the NuvlaBox to finish bootstrapping, by checking
         the context file.
@@ -45,45 +45,56 @@ def wait_bootstrap(context_file, nuvla_configuration_file, base_peripheral_path,
         time.sleep(5)
         if os.path.isfile(context_file):
             is_context_file = True
-            logging.info('Context file found')
-        logging.info('Waiting for context file')
+            logging.info('Context file found...')
 
-    while not os.path.exists(nuvla_configuration_file):
+    while True:
+        try:
+            logging.info(f'Waiting for {api_url}...')
+            r = requests.get(api_url + '/healthcheck')
+            r.raise_for_status()
+            if r.status_code == 200:
+                break
+        except:
+            time.sleep(15)
+
+    is_peripheral = False
+
+    while not is_peripheral:
+
+        logging.info('Waiting for peripheral directory...')
+
+        if os.path.isdir(peripheral_path):
+            is_peripheral = True
+
         time.sleep(5)
 
-    nuvla_endpoint_raw = nuvla_endpoint_insecure_raw = None
-    with open(nuvla_configuration_file) as nuvla_conf:
-        for line in nuvla_conf.read().split():
-            try:
-                if line and 'NUVLA_ENDPOINT=' in line:
-                    nuvla_endpoint_raw = line.split('=')[-1]
-                if line and 'NUVLA_ENDPOINT_INSECURE=' in line:
-                    nuvla_endpoint_insecure_raw = bool(line.split('=')[-1])
-            except IndexError:
-                pass
-
-    peripheral = False
-
-    if not os.path.isdir(peripheral_path):
-        while not peripheral:
-            time.sleep(5)
-            logging.info('Waiting for peripheral directory...')
-            if os.path.isdir(base_peripheral_path):
-                os.mkdir(peripheral_path)
-                peripheral = True
-                logging.info('PERIPHERAL: {}'.format(peripheral))
-
     logging.info('NuvlaBox has been initialized.')
-    return nuvla_endpoint_raw, nuvla_endpoint_insecure_raw
+    return
 
 
-def bluetoothCheck(peripheral_dir, mac_addr):
+def bluetoothCheck(api_url, peripheral_dir, mac_addr):
     """ Checks if peripheral already exists """
-    if mac_addr in os.listdir(peripheral_dir):
-        file_content = readDeviceFile(mac_addr, peripheral_dir)
-
-        return True, file_content.get('resource_id')
-    return False, None
+    identifier = mac_addr
+    try:
+        r = requests.get(f'{api_url}/{identifier}')
+        if r.status_code == 404:
+            return False
+        elif r.status_code == 200:
+            return True
+        else:
+            r.raise_for_status()
+    except requests.exceptions.InvalidSchema:
+        logging.error(f'The Agent API URL {api_url} seems to be malformed. Cannot continue...')
+        raise
+    except requests.exceptions.ConnectionError as ex:
+        logging.error(f'Cannot reach out to Agent API at {api_url}. Can be a transient issue: {str(ex)}')
+        logging.info(f'Attempting to find out if peripheral {identifier} already exists, with local search')
+        if identifier in os.listdir(f'{peripheral_dir}'):
+            return True
+        return False
+    except requests.exceptions.HTTPError as e:
+        logging.warning(f'Could not lookup peripheral {identifier}. Assuming it does not exist')
+        return False
 
 
 def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
@@ -389,25 +400,6 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
     return output
 
 
-def authenticate(url, insecure, activated_path):
-    """ Uses the NB ApiKey credential to authenticate against Nuvla
-
-    :return: Api client
-    """
-    api_instance = Api(endpoint='https://{}'.format(url),
-                       insecure=insecure, reauthenticate=True)
-
-    if os.path.exists(activated_path):
-        with open(activated_path) as apif:
-            apikey = json.loads(apif.read())
-    else:
-        return None
-
-    api_instance.login_apikey(apikey['api-key'], apikey['secret-key'])
-
-    return api_instance
-
-
 def diff(before, after):
     enter = []
     leaving = []
@@ -423,6 +415,85 @@ def diff(before, after):
     return enter, leaving
 
 
+def post_peripheral(api_url: str, body: dict) -> dict:
+    """ Posts a new peripheral into Nuvla, via the Agent API
+
+    :param body: content of the peripheral
+    :param api_url: URL of the Agent API for peripherals
+    :return: Nuvla resource
+    """
+
+    try:
+        r = requests.post(api_url, json=body)
+        r.raise_for_status()
+        return r.json()
+    except:
+        logging.error(f'Cannot create new peripheral in Nuvla. See agent logs for more details on the problem')
+        # this will be caught by the calling block
+        raise
+
+
+def delete_peripheral(api_url: str, identifier: str, resource_id=None) -> dict:
+    """ Deletes an existing peripheral from Nuvla, via the Agent API
+
+    :param identifier: peripheral identifier (same as local filename)
+    :param api_url: URL of the Agent API for peripherals
+    :param resource_id: peripheral resource ID in Nuvla
+    :return: Nuvla resource
+    """
+
+    if resource_id:
+        url = f'{api_url}/{identifier}?id={resource_id}'
+    else:
+        url = f'{api_url}/{identifier}'
+
+    try:
+        r = requests.delete(url)
+        r.raise_for_status()
+        return r.json()
+    except:
+        logging.error(f'Cannot delete peripheral {identifier} from Nuvla. See agent logs for more info about the issue')
+        # this will be caught by the calling block
+        raise
+
+
+def remove_legacy_peripherals(api_url: str, peripherals_dir: str, protocols: list):
+    """ In previous versions of this component, the peripherals were stored in an incompatible manner.
+    To avoid duplicates, before starting this component, we make sure all legacy peripherals are deleted
+
+    :param api_url: agent api url for peripherals
+    :param peripherals_dir: path to peripherals dir
+    :param protocols: list of protocols to look for
+    :return:
+    """
+
+    for proto in protocols:
+        if not proto:
+            # just to be sure we don't delete the top directory
+            continue
+
+        path = f'{peripherals_dir}{proto}'
+        if os.path.isdir(path):
+            for legacy_peripheral in os.listdir(path):
+                with open(f'{path}/{legacy_peripheral}') as lp:
+                    nuvla_id = json.load(lp).get("resource_id")
+
+                # if it has a nuvla_id, there it must be removed from Nuvla
+                if nuvla_id:
+                    try:
+                        delete_peripheral(api_url, f"{proto}/{legacy_peripheral}", resource_id=nuvla_id)
+                        continue
+                    except:
+                        pass
+
+                logging.info(f'Removed legacy peripheral {proto}/{legacy_peripheral}. If it still exists, it shall be re-created.')
+                os.remove(f'{path}/{legacy_peripheral}')
+
+            # by now, dir must be empty, so this shall work
+            os.rmdir(path)
+            logging.info(f'Removed all legacy peripherals for interface {proto}: {path}')
+
+
 if __name__ == "__main__":
 
     init_logger()
@@ -432,28 +503,12 @@ if __name__ == "__main__":
     activated_path = '/srv/nuvlabox/shared/.activated'
     context_path = '/srv/nuvlabox/shared/.context'
     cookies_file = '/srv/nuvlabox/shared/cookies'
-    base_peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
-    peripheral_path = '/srv/nuvlabox/shared/.peripherals/bluetooth'
+    peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
     nuvla_conf_file = '/srv/nuvlabox/shared/.nuvla-configuration'
+    base_api_url = "http://localhost:5080/api"
+    API_URL = f"{base_api_url}/peripheral"
 
-    # nuvla_endpoint_insecure = os.environ["NUVLA_ENDPOINT_INSECURE"] if "NUVLA_ENDPOINT_INSECURE" in os.environ else False
-    # if isinstance(nuvla_endpoint_insecure, str):
-    #     if nuvla_endpoint_insecure.lower() == "false":
-    #         nuvla_endpoint_insecure = False
-    #     else:
-    #         nuvla_endpoint_insecure = True
-    # else:
-    #     nuvla_endpoint_insecure = bool(nuvla_endpoint_insecure)
-    #
-    # API_URL = os.getenv("NUVLA_ENDPOINT", "nuvla.io")
-    # while API_URL[-1] == "/":
-    #     API_URL = API_URL[:-1]
-    #
-    # API_URL = API_URL.replace("https://", "")
-
-    api = None
-
-    API_URL, nuvla_endpoint_insecure = wait_bootstrap(context_path, nuvla_conf_file, base_peripheral_path, peripheral_path)
+    wait_bootstrap(context_path, base_api_url, peripheral_path)
 
     while True:
         try:
@@ -466,9 +521,9 @@ if __name__ == "__main__":
             logging.exception(f"Waiting for {context_path} to be populated")
             e.wait(timeout=5)
 
-    old_devices = {}
+    remove_legacy_peripherals(API_URL, peripheral_path, ["bluetooth"])
 
-    api = authenticate(API_URL, nuvla_endpoint_insecure, activated_path)
+    old_devices = {}
 
     while True:
 
@@ -481,38 +536,34 @@ if __name__ == "__main__":
 
             for device in publishing:
 
-                peripheral_already_registered, res_id = bluetoothCheck(peripheral_path, device)
+                peripheral_already_registered = bluetoothCheck(API_URL, peripheral_path, device)
 
-                old_devices[device] = current_devices[device]
                 if not peripheral_already_registered:
 
                     logging.info('PUBLISHING: {}'.format(current_devices[device]))
                     try:
-                        resource_id = api.add('nuvlabox-peripheral', current_devices[device]).data['resource-id']
-                    except:
-                        logging.exception(f'Unable to publish peripheral {device}')
+                        resource = post_peripheral(API_URL, current_devices[device])
+                    except Exception as ex:
+                        logging.error(f'Unable to publish peripheral {device}: {str(ex)}')
                         continue
 
-                    createDeviceFile(device,
-                                     {'resource_id': resource_id, 'message': current_devices[device]},
-                                     peripheral_path)
+                old_devices[device] = current_devices[device]
 
             for device in removing:
                 
                 logging.info('REMOVING: {}'.format(old_devices[device]))
 
-                peripheral_already_registered, res_id = bluetoothCheck(peripheral_path, device)
+                peripheral_already_registered = bluetoothCheck(API_URL, peripheral_path, device)
 
-                if res_id:
-                    r = api.delete(res_id).data
+                if peripheral_already_registered:
+                    try:
+                        resource = delete_peripheral(API_URL, device)
+                    except:
+                        logging.exception(f'Cannot delete {device} from Nuvla')
+                        continue
                 else:
-                    logging.warning(f'Unable to retrieve ID of locally registered device {device}. Local delete only')
+                    logging.warning(f'Peripheral {device} seems to have been removed already')
 
-                try:
-                    removeDeviceFile(device, peripheral_path)
-                except FileNotFoundError:
-                    logging.warning(f'Peripheral file {peripheral_path}/{device} does not exist. Considered deleted')
-                
                 del old_devices[device]
 
         e.wait(timeout=scanning_interval)
