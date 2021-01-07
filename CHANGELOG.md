@@ -1,4 +1,10 @@
 # Changelog
+## [1.0.0] - 2021-01-07
+### Added 
+ - peripheral persistency over restarts
+### Changed
+ - removed nuvla-api
+ - fixed deletion problem on last BT device standing
 ## [0.1.0] - 2020-12-04
         ### Added 
                   - persist required environment configuration

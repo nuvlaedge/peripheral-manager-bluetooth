@@ -1,4 +1,9 @@
 # Changelog
+## [0.1.0] - 2020-12-04
+        ### Added 
+                  - persist required environment configuration
+        ### Changed
+                  - minor bug fix
 ## [0.0.3] - 2020-11-19
 ### Added 
 - capitalize peripheral interface
