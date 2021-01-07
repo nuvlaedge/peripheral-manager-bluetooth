@@ -1,3 +1,4 @@
 pybluez
+requests
 #pybluez[ble]
 #bluepy
