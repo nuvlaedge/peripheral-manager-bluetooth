@@ -18,6 +18,8 @@ from threading import Event
 
 
 scanning_interval = 30
+KUBERNETES_SERVICE_HOST = os.getenv('KUBERNETES_SERVICE_HOST')
+namespace = os.getenv('MY_NAMESPACE', 'nuvlabox')
 
 
 def init_logger():
@@ -33,20 +35,12 @@ def init_logger():
     root.addHandler(handler)
 
 
-def wait_bootstrap(context_file, api_url, peripheral_path):
+def wait_bootstrap(api_url):
     """
     Waits for the NuvlaBox to finish bootstrapping, by checking
         the context file.
     :returns
     """
-    is_context_file = False
-
-    while not is_context_file:
-        time.sleep(5)
-        if os.path.isfile(context_file):
-            is_context_file = True
-            logging.info('Context file found...')
-
     while True:
         try:
             logging.info(f'Waiting for {api_url}...')
@@ -57,22 +51,11 @@ def wait_bootstrap(context_file, api_url, peripheral_path):
         except:
             time.sleep(15)
 
-    is_peripheral = False
-
-    while not is_peripheral:
-
-        logging.info('Waiting for peripheral directory...')
-
-        if os.path.isdir(peripheral_path):
-            is_peripheral = True
-
-        time.sleep(5)
-
     logging.info('NuvlaBox has been initialized.')
     return
 
 
-def bluetoothCheck(api_url, peripheral_dir, mac_addr):
+def bluetoothCheck(api_url, mac_addr):
     """ Checks if peripheral already exists """
     identifier = mac_addr
     try:
@@ -88,10 +71,7 @@ def bluetoothCheck(api_url, peripheral_dir, mac_addr):
         raise
     except requests.exceptions.ConnectionError as ex:
         logging.error(f'Cannot reach out to Agent API at {api_url}. Can be a transient issue: {str(ex)}')
-        logging.info(f'Attempting to find out if peripheral {identifier} already exists, with local search')
-        if identifier in os.listdir(f'{peripheral_dir}'):
-            return True
-        return False
+        raise
     except requests.exceptions.HTTPError as e:
         logging.warning(f'Could not lookup peripheral {identifier}. Assuming it does not exist')
         return False
@@ -360,7 +340,7 @@ def cod_converter(cod_decimal_string):
     return peripheral_classes
 
 
-def bluetoothManager(nuvlabox_id, nuvlabox_version):
+def bluetoothManager():
 
     output = {}
 
@@ -388,8 +368,6 @@ def bluetoothManager(nuvlabox_id, nuvlabox_version):
         for device in bluetooth:
             name = device.get("name", "unknown")
             output[device['identifier']] = {
-                    "parent": nuvlabox_id,
-                    "version": nuvlabox_version,
                     "available": True,
                     "name": name,
                     "classes": cod_converter(device.get("class", "")),
@@ -517,26 +495,12 @@ if __name__ == "__main__":
     logging.info('BLUETOOTH MANAGER STARTED')
     e = Event()
 
-    activated_path = '/srv/nuvlabox/shared/.activated'
-    context_path = '/srv/nuvlabox/shared/.context'
-    cookies_file = '/srv/nuvlabox/shared/cookies'
     peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
-    nuvla_conf_file = '/srv/nuvlabox/shared/.nuvla-configuration'
-    base_api_url = "http://localhost:5080/api"
+    agent_api_endpoint = 'localhost:5080' if not KUBERNETES_SERVICE_HOST else f'agent.{namespace}'
+    base_api_url = f"http://{agent_api_endpoint}/api"
     API_URL = f"{base_api_url}/peripheral"
 
-    wait_bootstrap(context_path, base_api_url, peripheral_path)
-
-    while True:
-        try:
-            with open(context_path) as c:
-                context = json.loads(c.read())
-            NUVLABOX_VERSION = context['version']
-            NUVLABOX_ID = context['id']
-            break
-        except (json.decoder.JSONDecodeError, KeyError):
-            logging.exception(f"Waiting for {context_path} to be populated")
-            e.wait(timeout=5)
+    wait_bootstrap(base_api_url)
 
     remove_legacy_peripherals(API_URL, peripheral_path, ["bluetooth"])
 
@@ -544,7 +508,7 @@ if __name__ == "__main__":
 
     while True:
 
-        current_devices = bluetoothManager(NUVLABOX_ID, NUVLABOX_VERSION)
+        current_devices = bluetoothManager()
         logging.info('CURRENT DEVICES: {}'.format(current_devices))
         
         if current_devices != old_devices:
@@ -553,7 +517,7 @@ if __name__ == "__main__":
 
             for device in publishing:
 
-                peripheral_already_registered = bluetoothCheck(API_URL, peripheral_path, device)
+                peripheral_already_registered = bluetoothCheck(API_URL, device)
 
                 if not peripheral_already_registered:
 
@@ -570,7 +534,7 @@ if __name__ == "__main__":
                 
                 logging.info('REMOVING: {}'.format(old_devices[device]))
 
-                peripheral_already_registered = bluetoothCheck(API_URL, peripheral_path, device)
+                peripheral_already_registered = bluetoothCheck(API_URL, device)
 
                 if peripheral_already_registered:
                     try:
