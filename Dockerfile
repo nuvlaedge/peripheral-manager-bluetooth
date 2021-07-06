@@ -1,4 +1,4 @@
-FROM python:3.9-alpine as builder
+FROM python:3.9-alpine3.12 as builder
 # because of pybluez[ble] which requires gattlib, the dependencies are quite a few unstable for RPi
 # for the future, consider using bluepy instead - which requires privileged access, and does not provide very detailed
 #     information about BLE devices, becoming nuisance to the user
@@ -11,7 +11,7 @@ RUN pip install -r /opt/nuvlabox/requirements.txt
 
 # ======= #
 
-FROM python:3.9-alpine
+FROM python:3.9-alpine3.12
 
 ARG GIT_BRANCH
 ARG GIT_COMMIT_ID
