@@ -1,4 +1,9 @@
 # Changelog
+## [1.1.0] - 2021-07-26
+### Added 
+ - add support for execution in Kubernetes
+### Changed
+ - use alpine 3.12
 ## [1.0.0] - 2021-01-07
 ### Added 
  - peripheral persistency over restarts
