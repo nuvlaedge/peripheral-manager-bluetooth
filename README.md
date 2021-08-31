@@ -4,7 +4,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg?style=for-the-badge)](https://github.com/nuvlabox/peripheral-manager-bluetooth/graphs/commit-activity)
 [![GitHub issues](https://img.shields.io/github/issues/nuvlabox/peripheral-manager-bluetooth?style=for-the-badge&logo=github&logoColor=white)](https://GitHub.com/nuvlabox/peripheral-manager-bluetooth/issues/)
 [![Docker pulls](https://img.shields.io/docker/pulls/nuvlabox/peripheral-manager-bluetooth?style=for-the-badge&logo=Docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-bluetooth)
-[![Docker image size](https://img.shields.io/microbadger/image-size/nuvlabox/peripheral-manager-bluetooth?style=for-the-badge&logo=docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-bluetooth)
+[![Docker image size](https://img.shields.io/docker/image-size/nuvladev/peripheral-manager-bluetooth/master?style=for-the-badge&logo=docker&logoColor=white)](https://cloud.docker.com/u/nuvlabox/repository/docker/nuvlabox/peripheral-manager-bluetooth)
 
 
 ![CI Build](https://github.com/nuvlabox/peripheral-manager-bluetooth/actions/workflows/main.yml/badge.svg)
@@ -71,4 +71,4 @@ This is an open-source project, so all community contributions are more than wel
  
 ## Copyright
 
-Copyright &copy; 2019, SixSq Sàrl
+Copyright &copy; 2021, SixSq SA
