@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-"""NuvlaBox Peripheral Manager Bluetooth
+"""NuvlaEdge Peripheral Manager Bluetooth
 This service provides bluetooth device discovery.
 """
 
@@ -19,7 +19,7 @@ from threading import Event
 
 scanning_interval = 30
 KUBERNETES_SERVICE_HOST = os.getenv('KUBERNETES_SERVICE_HOST')
-namespace = os.getenv('MY_NAMESPACE', 'nuvlabox')
+namespace = os.getenv('MY_NAMESPACE', 'nuvlaedge')
 
 
 def init_logger():
@@ -37,7 +37,7 @@ def init_logger():
 
 def wait_bootstrap(api_url):
     """
-    Waits for the NuvlaBox to finish bootstrapping, by checking
+    Waits for the NuvlaEdge to finish bootstrapping, by checking
         the context file.
     :returns
     """
@@ -51,7 +51,7 @@ def wait_bootstrap(api_url):
         except:
             time.sleep(15)
 
-    logging.info('NuvlaBox has been initialized.')
+    logging.info('NuvlaEdge has been initialized.')
     return
 
 
@@ -385,10 +385,10 @@ def diff(before, after):
     for key in before.keys():
         if key not in after.keys():
             leaving.append(key)
-    
+
     for key in after.keys():
         if key not in before.keys():
-            enter.append(key) 
+            enter.append(key)
 
     return enter, leaving
 
@@ -475,7 +475,7 @@ def remove_legacy_peripherals(api_url: str, peripherals_dir: str, protocols: lis
 def get_saved_peripherals(api_url, protocol):
     """
     To be used at bootstrap, to check for existing peripherals, just to make sure we delete old and only insert new
-    peripherals, that have been modified during the NuvlaBox shutdown
+    peripherals, that have been modified during the NuvlaEdge shutdown
 
     :param api_url: url of the agent api for peripherals
     :param protocol: protocol name = interface
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     logging.info('BLUETOOTH MANAGER STARTED')
     e = Event()
 
-    peripheral_path = '/srv/nuvlabox/shared/.peripherals/'
+    peripheral_path = '/srv/nuvlaedge/shared/.peripherals/'
     agent_api_endpoint = 'localhost:5080' if not KUBERNETES_SERVICE_HOST else f'agent.{namespace}'
     base_api_url = f"http://{agent_api_endpoint}/api"
     API_URL = f"{base_api_url}/peripheral"
@@ -510,7 +510,7 @@ if __name__ == "__main__":
 
         current_devices = bluetoothManager()
         logging.info('CURRENT DEVICES: {}'.format(current_devices))
-        
+
         if current_devices != old_devices:
 
             publishing, removing = diff(old_devices, current_devices)
@@ -531,7 +531,7 @@ if __name__ == "__main__":
                 old_devices[device] = current_devices[device]
 
             for device in removing:
-                
+
                 logging.info('REMOVING: {}'.format(old_devices[device]))
 
                 peripheral_already_registered = bluetoothCheck(API_URL, device)

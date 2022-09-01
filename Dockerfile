@@ -4,11 +4,11 @@ FROM ${BASE_IMAGE} as builder
 # for the future, consider using bluepy instead - which requires privileged access, and does not provide very detailed
 #     information about BLE devices, becoming nuisance to the user
 
-COPY code/requirements.txt /opt/nuvlabox/
+COPY code/requirements.txt /opt/nuvlaedge/
 
 RUN apk update && apk add --no-cache g++ bluez-dev
 
-RUN pip install -r /opt/nuvlabox/requirements.txt
+RUN pip install -r /opt/nuvlaedge/requirements.txt
 
 # ======= #
 
@@ -30,16 +30,16 @@ LABEL org.opencontainers.image.authors="support@sixsq.com"
 LABEL org.opencontainers.image.created=${GIT_BUILD_TIME}
 LABEL org.opencontainers.image.url=${PROJECT_URL}
 LABEL org.opencontainers.image.vendor="SixSq SA"
-LABEL org.opencontainers.image.title="NuvlaBox Peripheral Manager Bluetooth"
-LABEL org.opencontainers.image.description="Identifies bluetooth devices in the vicinity of the NuvlaBox"
+LABEL org.opencontainers.image.title="NuvlaEdge Peripheral Manager Bluetooth"
+LABEL org.opencontainers.image.description="Identifies bluetooth devices in the vicinity of the NuvlaEdge"
 
 COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
-COPY code/ LICENSE /opt/nuvlabox/
+COPY code/ LICENSE /opt/nuvlaedge/
 
 RUN apk add --no-cache bluez-dev
 
-WORKDIR /opt/nuvlabox/
+WORKDIR /opt/nuvlaedge/
 
 ONBUILD RUN ./license.sh
 

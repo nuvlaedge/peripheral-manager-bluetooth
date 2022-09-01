@@ -6,9 +6,9 @@ services:
     restart: on-failure
     network_mode: "host"
     environment:
-      - NUVLABOX_UUID=${NUVLABOX_UUID}
+      - NUVLAEDGE_UUID=${NUVLAEDGE_UUID}
       - NUVLA_ENDPOINT=${NUVLA_ENDPOINT:-nuvla.io}
       - NUVLA_ENDPOINT_INSECURE=${NUVLA_ENDPOINT_INSECURE:-False}
     labels:
-      - nuvlabox.component=True
-      - nuvlabox.deployment=production
+      - nuvlaedge.component=True
+      - nuvlaedge.deployment=production
