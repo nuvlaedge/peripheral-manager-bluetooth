@@ -26,6 +26,9 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Install libbluetooth-dev
+        run: sudo apt-get install libbluetooth-dev
+
       - name: Install tox
         run: pip install tox
 
