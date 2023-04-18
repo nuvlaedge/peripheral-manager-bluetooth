@@ -1,4 +1,4 @@
-pybluez
+pybluez==0.22
 requests
 #pybluez[ble]
 #bluepy
