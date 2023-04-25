@@ -13,8 +13,10 @@ import time
 import os
 import json
 import requests
-#from bluetooth.ble import DiscoveryService
 from threading import Event
+
+
+from nuvlaedge.peripherals.peripheral import Peripheral
 
 
 scanning_interval = 30
@@ -35,49 +37,7 @@ def init_logger():
     root.addHandler(handler)
 
 
-def wait_bootstrap(api_url):
-    """
-    Waits for the NuvlaEdge to finish bootstrapping, by checking
-        the context file.
-    :returns
-    """
-    while True:
-        try:
-            logging.info(f'Waiting for {api_url}...')
-            r = requests.get(api_url + '/healthcheck')
-            r.raise_for_status()
-            if r.status_code == 200:
-                break
-        except:
-            time.sleep(15)
-
-    logging.info('NuvlaEdge has been initialized.')
-    return
-
-
-def bluetoothCheck(api_url, mac_addr):
-    """ Checks if peripheral already exists """
-    identifier = mac_addr
-    try:
-        r = requests.get(f'{api_url}/{identifier}')
-        if r.status_code == 404:
-            return False
-        elif r.status_code == 200:
-            return True
-        else:
-            r.raise_for_status()
-    except requests.exceptions.InvalidSchema:
-        logging.error(f'The Agent API URL {api_url} seems to be malformed. Cannot continue...')
-        raise
-    except requests.exceptions.ConnectionError as ex:
-        logging.error(f'Cannot reach out to Agent API at {api_url}. Can be a transient issue: {str(ex)}')
-        raise
-    except requests.exceptions.HTTPError as e:
-        logging.warning(f'Could not lookup peripheral {identifier}. Assuming it does not exist')
-        return False
-
-
-def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
+def create_device_file(device_mac_addr, device_file, peripheral_dir):
 
     file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
 
@@ -85,32 +45,26 @@ def createDeviceFile(device_mac_addr, device_file, peripheral_dir):
         json.dump(device_file, outfile)
 
 
-def removeDeviceFile(device_mac_addr, peripheral_dir):
+def remove_device_file(device_mac_addr, peripheral_dir):
     file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
 
     os.unlink(file_path)
 
 
-def readDeviceFile(device_mac_addr, peripheral_dir):
+def read_device_file(device_mac_addr, peripheral_dir):
     file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
 
     return json.load(open(file_path))
 
 
-def deviceDiscovery():
+def device_discovery():
     """
     Return all discoverable bluetooth devices.
     """
     return bt.discover_devices(lookup_names=True, lookup_class=True)
 
 
-# def bleDeviceDiscovery():
-#     service = DiscoveryService("hci0")
-#     devices = service.discover(2)
-#     return devices
-
-
-def compareBluetooth(bluetooth, ble):
+def compare_bluetooth(bluetooth, ble):
     output = []
 
     for device in bluetooth:
@@ -340,19 +294,19 @@ def cod_converter(cod_decimal_string):
     return peripheral_classes
 
 
-def bluetoothManager():
+def bluetooth_manager():
 
     output = {}
 
     try:
         # list
-        bluetoothDevices = deviceDiscovery()
-        logging.info(bluetoothDevices)
+        bluetooth_devices = device_discovery()
+        logging.info(bluetooth_devices)
     except:
-        bluetoothDevices = []
+        bluetooth_devices = []
         logging.exception("Failed to discover BT devices")
 
-    bleDevices = {}
+    ble_devices = {}
     # TODO: implement reliable BLE discovery that works for RPi
     # try:
     #     # dict
@@ -363,7 +317,7 @@ def bluetoothManager():
     #     logging.exception("Failed to discover BLE devices")
 
     # get formatted list of bt devices [{},...]
-    bluetooth = compareBluetooth(bluetoothDevices, bleDevices)
+    bluetooth = compare_bluetooth(bluetooth_devices, ble_devices)
     if len(bluetooth) > 0:
         for device in bluetooth:
             name = device.get("name", "unknown")
@@ -393,158 +347,11 @@ def diff(before, after):
     return enter, leaving
 
 
-def post_peripheral(api_url: str, body: dict) -> dict:
-    """ Posts a new peripheral into Nuvla, via the Agent API
-
-    :param body: content of the peripheral
-    :param api_url: URL of the Agent API for peripherals
-    :return: Nuvla resource
-    """
-
-    try:
-        r = requests.post(api_url, json=body)
-        r.raise_for_status()
-        return r.json()
-    except:
-        logging.error(f'Cannot create new peripheral in Nuvla. See agent logs for more details on the problem')
-        # this will be caught by the calling block
-        raise
-
-
-def delete_peripheral(api_url: str, identifier: str, resource_id=None) -> dict:
-    """ Deletes an existing peripheral from Nuvla, via the Agent API
-
-    :param identifier: peripheral identifier (same as local filename)
-    :param api_url: URL of the Agent API for peripherals
-    :param resource_id: peripheral resource ID in Nuvla
-    :return: Nuvla resource
-    """
-
-    if resource_id:
-        url = f'{api_url}/{identifier}?id={resource_id}'
-    else:
-        url = f'{api_url}/{identifier}'
-
-    try:
-        r = requests.delete(url)
-        r.raise_for_status()
-        return r.json()
-    except:
-        logging.error(f'Cannot delete peripheral {identifier} from Nuvla. See agent logs for more info about the issue')
-        # this will be caught by the calling block
-        raise
-
-
-def remove_legacy_peripherals(api_url: str, peripherals_dir: str, protocols: list):
-    """ In previous versions of this component, the peripherals were stored in an incompatible manner.
-    To avoid duplicates, before starting this component, we make sure all legacy peripherals are deleted
-
-    :param api_url: agent api url for peripherals
-    :param peripherals_dir: path to peripherals dir
-    :param protocols: list of protocols to look for
-    :return:
-    """
-
-    for proto in protocols:
-        if not proto:
-            # just to be sure we don't delete the top directory
-            continue
-
-        path = f'{peripherals_dir}{proto}'
-        if os.path.isdir(path):
-            for legacy_peripheral in os.listdir(path):
-                with open(f'{path}/{legacy_peripheral}') as lp:
-                    nuvla_id = json.load(lp).get("resource_id")
-
-                # if it has a nuvla_id, there it must be removed from Nuvla
-                if nuvla_id:
-                    try:
-                        delete_peripheral(api_url, f"{proto}/{legacy_peripheral}", resource_id=nuvla_id)
-                        continue
-                    except:
-                        pass
-
-                logging.info(f'Removed legacy peripheral {proto}/{legacy_peripheral}. If it still exists, it shall be re-created.')
-                os.remove(f'{path}/{legacy_peripheral}')
-
-            # by now, dir must be empty, so this shall work
-            os.rmdir(path)
-            logging.info(f'Removed all legacy peripherals for interface {proto}: {path}')
-
-
-def get_saved_peripherals(api_url, protocol):
-    """
-    To be used at bootstrap, to check for existing peripherals, just to make sure we delete old and only insert new
-    peripherals, that have been modified during the NuvlaEdge shutdown
-
-    :param api_url: url of the agent api for peripherals
-    :param protocol: protocol name = interface
-    :return: map of device identifiers and content
-    """
-
-    query = f'{api_url}?parameter=interface&value={protocol}'
-    r = requests.get(query)
-    r.raise_for_status()
-
-    return r.json()
-
-
 if __name__ == "__main__":
 
     init_logger()
-    logging.info('BLUETOOTH MANAGER STARTED')
-    e = Event()
+    logging.info('Starting bluetooth manager')
 
-    peripheral_path = '/srv/nuvlaedge/shared/.peripherals/'
-    agent_api_endpoint = 'localhost:5080' if not KUBERNETES_SERVICE_HOST else f'agent.{namespace}'
-    base_api_url = f"http://{agent_api_endpoint}/api"
-    API_URL = f"{base_api_url}/peripheral"
+    bluetooth_peripheral: Peripheral = Peripheral('bluetooth')
 
-    wait_bootstrap(base_api_url)
-
-    remove_legacy_peripherals(API_URL, peripheral_path, ["bluetooth"])
-
-    old_devices = get_saved_peripherals(API_URL, 'Bluetooth')
-
-    while True:
-
-        current_devices = bluetoothManager()
-        logging.info('CURRENT DEVICES: {}'.format(current_devices))
-
-        if current_devices != old_devices:
-
-            publishing, removing = diff(old_devices, current_devices)
-
-            for device in publishing:
-
-                peripheral_already_registered = bluetoothCheck(API_URL, device)
-
-                if not peripheral_already_registered:
-
-                    logging.info('PUBLISHING: {}'.format(current_devices[device]))
-                    try:
-                        resource = post_peripheral(API_URL, current_devices[device])
-                    except Exception as ex:
-                        logging.error(f'Unable to publish peripheral {device}: {str(ex)}')
-                        continue
-
-                old_devices[device] = current_devices[device]
-
-            for device in removing:
-
-                logging.info('REMOVING: {}'.format(old_devices[device]))
-
-                peripheral_already_registered = bluetoothCheck(API_URL, device)
-
-                if peripheral_already_registered:
-                    try:
-                        resource = delete_peripheral(API_URL, device)
-                    except:
-                        logging.exception(f'Cannot delete {device} from Nuvla')
-                        continue
-                else:
-                    logging.warning(f'Peripheral {device} seems to have been removed already')
-
-                del old_devices[device]
-
-        e.wait(timeout=scanning_interval)
+    bluetooth_peripheral.run(bluetooth_manager)
