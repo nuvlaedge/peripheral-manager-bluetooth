@@ -9,19 +9,11 @@ This service provides bluetooth device discovery.
 import bluetooth as bt
 import logging
 import sys
-import time
 import os
 import json
-import requests
-from threading import Event
 
 
 from nuvlaedge.peripherals.peripheral import Peripheral
-
-
-scanning_interval = 30
-KUBERNETES_SERVICE_HOST = os.getenv('KUBERNETES_SERVICE_HOST')
-namespace = os.getenv('MY_NAMESPACE', 'nuvlaedge')
 
 
 def init_logger():
@@ -35,26 +27,6 @@ def init_logger():
     formatter = logging.Formatter('%(levelname)s - %(funcName)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
-
-
-def create_device_file(device_mac_addr, device_file, peripheral_dir):
-
-    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
-
-    with open(file_path, 'w') as outfile:
-        json.dump(device_file, outfile)
-
-
-def remove_device_file(device_mac_addr, peripheral_dir):
-    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
-
-    os.unlink(file_path)
-
-
-def read_device_file(device_mac_addr, peripheral_dir):
-    file_path = '{}/{}'.format(peripheral_dir, device_mac_addr)
-
-    return json.load(open(file_path))
 
 
 def device_discovery():
