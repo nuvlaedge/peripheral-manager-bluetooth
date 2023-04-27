@@ -304,21 +304,6 @@ def bluetooth_manager():
     return output
 
 
-def diff(before, after):
-    enter = []
-    leaving = []
-
-    for key in before.keys():
-        if key not in after.keys():
-            leaving.append(key)
-
-    for key in after.keys():
-        if key not in before.keys():
-            enter.append(key)
-
-    return enter, leaving
-
-
 if __name__ == "__main__":
 
     init_logger()
