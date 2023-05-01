@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=python:3.8-alpine3.12
+ARG BASE_IMAGE=nuvladev/nuvlaedge-base:latest
 FROM ${BASE_IMAGE} as builder
 # because of pybluez[ble] which requires gattlib, the dependencies are quite a few unstable for RPi
 # for the future, consider using bluepy instead - which requires privileged access, and does not provide very detailed
